@@ -43,7 +43,7 @@
  * DEPLOYMENT TIME: < 2 minutes
  * 
  * CLEANUP:
- *   See sql/cleanup_all.sql for complete removal
+ *   See sql/99_cleanup/cleanup_all.sql for complete removal
  * 
  * VERSION: 2.7 (Git-integrated deployment)
  * LAST UPDATED: 2025-11-21

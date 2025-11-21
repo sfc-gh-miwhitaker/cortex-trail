@@ -10,7 +10,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 **⚡ Fastest path - Deploy everything in ONE command:**
 
-**Copy/paste [`sql/deploy_all.sql`](sql/deploy_all.sql) into Snowsight → Click "Run All" → DONE**
+**Copy/paste [`deploy_all.sql`](deploy_all.sql) into Snowsight → Click "Run All" → DONE**
 
 This deploys:
 - ✅ Monitoring views (16 views tracking all Cortex services)
@@ -895,8 +895,9 @@ AI_Scoping/
 │   ├── 02-DEPLOYMENT_WALKTHROUGH.md   # Deployment walkthrough
 │   └── 03-TROUBLESHOOTING.md          # Issue resolution
 │
+├── deploy_all.sql                              # ⚡ ONE-COMMAND: Deploy everything (Git-integrated, project root)
+│
 ├── sql/
-│   ├── deploy_all.sql                              # ⚡ ONE-COMMAND: Deploy everything (root level, Git-integrated)
 │   ├── 01_deployment/
 │   │   └── deploy_cortex_monitoring.sql            # Deploy monitoring only (16 views + task + table)
 │   ├── 02_utilities/
