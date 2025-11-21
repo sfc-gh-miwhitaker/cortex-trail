@@ -100,7 +100,7 @@ This creates 9 read-only views that track all Cortex service usage.
 
 ### 1.2 Run Deployment Script
 
-1. Open `sql/deploy_cortex_monitoring.sql` from this project
+1. Open `sql/01_deployment/deploy_cortex_monitoring.sql` from this project
 2. Copy the entire file contents
 3. Paste into your Snowflake worksheet
 4. Click **"Run All"** (or press `Ctrl+Enter` to run all statements)
@@ -385,7 +385,7 @@ To remove all monitoring objects:
 
 ```sql
 -- Run cleanup script
-@sql/cleanup_cortex_monitoring.sql
+@sql/99_cleanup/cleanup_cortex_monitoring.sql
 ```
 
 **Choose one option:**

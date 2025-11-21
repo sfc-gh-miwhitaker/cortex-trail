@@ -454,5 +454,5 @@ GRANT USAGE ON STREAMLIT CORTEX_COST_CALCULATOR TO ROLE <user_role>;
 
 ## Change History
 
-See `.cursor/docs/DIAGRAM_CHANGELOG.md` for version history.
+Last Updated: 2025-11-12
 

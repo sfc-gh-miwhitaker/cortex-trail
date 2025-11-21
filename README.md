@@ -8,22 +8,31 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 ## 👋 First Time Here?
 
-**Fastest path - Deploy in 2 steps:**
+**⚡ Fastest path - Deploy everything in ONE command:**
 
-1. **Deploy Monitoring (< 1 min):** Copy/paste [`sql/deploy_cortex_monitoring.sql`](sql/deploy_cortex_monitoring.sql) into Snowsight → Click "Run All" → DONE
-2. **Deploy Calculator (2-3 min):** Follow [Streamlit deployment](#deploy-streamlit-calculator) below
+**Copy/paste [`sql/deploy_all.sql`](sql/deploy_all.sql) into Snowsight → Click "Run All" → DONE**
 
-**That's it.** Everything else is optional.
+This deploys:
+- ✅ Monitoring views (16 views tracking all Cortex services)
+- ✅ Snapshot table + serverless task (daily snapshots)
+- ✅ Streamlit calculator (from GitHub)
+
+**Total deployment time: < 2 minutes** 🚀
+
+---
+
+**Alternative: Deploy monitoring & calculator separately:**
+
+1. **Deploy Monitoring (< 1 min):** Copy/paste [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) into Snowsight → Click "Run All"
+2. **Deploy Calculator (2-3 min):** [Jump to Streamlit deployment instructions ↓](#deploy-streamlit-calculator)
 
 ---
 
 **Want more guidance?**
 
-- **New to Snowflake Cortex?** Start with [`QUICKSTART.md`](QUICKSTART.md) - complete walkthrough with screenshots (15 min)
-- **Want detailed explanations?** Read [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) (5 min)
-- **Prefer hands-on?** Jump straight to deployment scripts above
-
-**Total deployment time: 3-4 minutes**
+- **Want to understand the architecture?** [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) - Concepts and design (5 min)
+- **Need detailed walkthrough?** [`docs/02-DEPLOYMENT_WALKTHROUGH.md`](docs/02-DEPLOYMENT_WALKTHROUGH.md) - Step-by-step deployment guide (15 min)
+- **Prefer action over reading?** Use the one-command deployment above
 
 ---
 
@@ -104,7 +113,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 #### Step 1: Deploy Monitoring in Customer Account
 
-**Action:** Open Snowsight in customer's account → New Worksheet → Copy/paste entire `sql/deploy_cortex_monitoring.sql` → Click "Run All"
+**Action:** Open Snowsight in customer's account → New Worksheet → Copy/paste entire `sql/01_deployment/deploy_cortex_monitoring.sql` → Click "Run All"
 
 **What this creates:**
 - Database: `SNOWFLAKE_EXAMPLE`
@@ -121,7 +130,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 After 7-14 days, in customer's Snowsight:
 
-**Action:** Open `sql/export_metrics.sql` → Run query → Click "Download" → Save as CSV
+**Action:** Open `sql/02_utilities/export_metrics.sql` → Run query → Click "Download" → Save as CSV
 
 **File naming:** `customer_name_cortex_usage_YYYYMMDD.csv`
 
@@ -129,16 +138,9 @@ After 7-14 days, in customer's Snowsight:
 
 #### Step 3: Deploy Calculator (One-Time in YOUR Account)
 
-In **YOUR** Snowflake account:
+In **YOUR** Snowflake account, deploy the calculator once:
 
-1. Navigate: **Streamlit** > **Apps** > **"+ Streamlit App"**
-2. Configure:
-   - **Name:** `CORTEX_COST_CALCULATOR`
-   - **Location:** Your database/schema
-   - **Warehouse:** Select warehouse (SMALL is sufficient)
-3. **Copy code:** Paste contents of `streamlit_app.py`
-4. **Packages:** Use `environment.yml` for dependencies
-5. Click **"Create"**
+**See detailed instructions:** [Deploy Streamlit Calculator](#deploy-streamlit-calculator)
 
 **Time:** 2-3 minutes (one-time setup)
 
@@ -155,7 +157,7 @@ In **YOUR** Snowflake account:
 
 ```sql
 -- Remove monitoring from CUSTOMER'S account when done
-@sql/cleanup_cortex_monitoring.sql
+@sql/99_cleanup/cleanup_cortex_monitoring.sql
 ```
 
 ---
@@ -170,7 +172,7 @@ Deploy both monitoring and calculator in your own Snowflake account to track and
 
 ```sql
 -- Run in your Snowflake account
-@sql/deploy_cortex_monitoring.sql
+@sql/01_deployment/deploy_cortex_monitoring.sql
 ```
 
 **Requirements:**
@@ -184,14 +186,7 @@ Deploy both monitoring and calculator in your own Snowflake account to track and
 
 #### Step 2: Deploy Calculator
 
-1. Navigate: **Streamlit** > **Apps** > **"+ Streamlit App"**
-2. Configure:
-   - **Name:** `CORTEX_COST_CALCULATOR`
-   - **Location:** `SNOWFLAKE_EXAMPLE.CORTEX_USAGE`
-   - **Warehouse:** Select warehouse
-3. Copy code from `streamlit_app.py`
-4. Add packages from `environment.yml`
-5. Click **"Create"**
+**See detailed instructions:** [Deploy Streamlit Calculator](#deploy-streamlit-calculator) (2-3 minutes)
 
 #### Step 3: Access Your Calculator
 
@@ -327,7 +322,7 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 
 ```sql
 -- Run in Snowflake UI, SnowSQL, or any SQL client
-@sql/deploy_cortex_monitoring.sql
+@sql/01_deployment/deploy_cortex_monitoring.sql
 ```
 
 **What happens:**
@@ -410,6 +405,37 @@ GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE TO ROLE <USER
 -- Grant Streamlit access (if deployed)
 GRANT USAGE ON STREAMLIT CORTEX_COST_CALCULATOR TO ROLE <USER_ROLE>;
 ```
+
+---
+
+## Verification Checklist
+
+After deployment, verify everything is working correctly:
+
+- [ ] **Database created:** `SHOW DATABASES LIKE 'SNOWFLAKE_EXAMPLE'` returns 1 row
+- [ ] **Schema created:** `SHOW SCHEMAS IN DATABASE SNOWFLAKE_EXAMPLE` includes CORTEX_USAGE
+- [ ] **Views created:** `SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` returns 16 rows
+- [ ] **Table created:** `SHOW TABLES IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes CORTEX_USAGE_SNAPSHOTS
+- [ ] **Task created:** `SHOW TASKS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes TASK_DAILY_CORTEX_SNAPSHOT
+- [ ] **Task running:** Task status is "started" (check with `SHOW TASKS`)
+- [ ] **Views return data:** `SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 1` returns rows (empty if no usage yet)
+- [ ] **Streamlit accessible:** App loads without errors (if deployed)
+- [ ] **Charts render:** Historical analysis displays visualizations
+
+---
+
+## Next Steps
+
+After successful deployment, enhance your monitoring setup:
+
+1. **Set up alerts** - Configure resource monitors for Cortex budget tracking
+2. **Grant access** - Share views/app with other users via GRANT statements (see [Deployment Guide](#deployment-guide))
+3. **Customize views** - Modify lookback periods or filters to match your organization's needs
+4. **Automate exports** - Schedule regular CSV exports or integrate views with your BI tools
+5. **Analyze query costs** - Use `V_QUERY_COST_ANALYSIS` to identify expensive queries and optimize
+6. **Monitor trends** - Check `V_CORTEX_DAILY_SUMMARY` for usage patterns and week-over-week growth
+
+**Full documentation:** See [`docs/`](docs/) directory for detailed guides on architecture, deployment, and troubleshooting.
 
 ---
 
@@ -670,7 +696,7 @@ A: Minimal impact. View queries use your existing warehouse and consume trivial 
 A: Yes. All SQL is provided and can be modified. Add filters, change date ranges, or create custom aggregations.
 
 **Q: How do we remove everything?**  
-A: Run `@sql/cleanup_cortex_monitoring.sql`. Complete removal in seconds. See [Cleanup](#cleanup--removal) section.
+A: Run `@sql/99_cleanup/cleanup_cortex_monitoring.sql`. Complete removal in seconds. See [Cleanup](#cleanup--removal) section.
 
 ### Data Questions
 
@@ -785,7 +811,7 @@ See `docs/03-TROUBLESHOOTING.md` for comprehensive troubleshooting guide includi
 
 ```sql
 -- Run cleanup script
-@sql/cleanup_cortex_monitoring.sql
+@sql/99_cleanup/cleanup_cortex_monitoring.sql
 ```
 
 The script provides three removal options:
@@ -860,7 +886,6 @@ DROP STREAMLIT IF EXISTS CORTEX_COST_CALCULATOR;
 ```
 AI_Scoping/
 ├── README.md                          # This file - complete guide
-├── .gitignore                         # Git ignore patterns
 ├── images/                            # Screenshots and visuals
 │   ├── streamlit_screenshot.png       # Streamlit app preview
 │   └── README.md                      # Screenshot instructions
@@ -871,9 +896,14 @@ AI_Scoping/
 │   └── 03-TROUBLESHOOTING.md          # Issue resolution
 │
 ├── sql/
-│   ├── deploy_cortex_monitoring.sql   # Deploy monitoring (10 views + task + table)
-│   ├── export_metrics.sql             # Extract data for SE workflow
-│   └── cleanup_cortex_monitoring.sql  # Remove all monitoring objects
+│   ├── deploy_all.sql                              # ⚡ ONE-COMMAND: Deploy everything (root level, Git-integrated)
+│   ├── 01_deployment/
+│   │   └── deploy_cortex_monitoring.sql            # Deploy monitoring only (16 views + task + table)
+│   ├── 02_utilities/
+│   │   └── export_metrics.sql                      # Extract data for SE workflow
+│   └── 99_cleanup/
+│       ├── cleanup_all.sql                         # Remove everything (all objects)
+│       └── cleanup_cortex_monitoring.sql           # Remove monitoring objects only
 │
 └── streamlit/cortex_cost_calculator/
     ├── streamlit_app.py               # Full-featured calculator with v2.0 features

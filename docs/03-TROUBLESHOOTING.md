@@ -85,7 +85,7 @@ ALTER SESSION SET STATEMENT_TIMEOUT_IN_SECONDS = 3600;
 USE WAREHOUSE <LARGE_WAREHOUSE>;
 
 -- Re-run deployment
-@sql/deploy_cortex_monitoring.sql
+@sql/01_deployment/deploy_cortex_monitoring.sql
 ```
 
 ---

@@ -70,7 +70,7 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 
 ### Step 1.3: Deploy Monitoring Views
 
-1. Open `sql/deploy_cortex_monitoring.sql` in a text editor
+1. Open `sql/01_deployment/deploy_cortex_monitoring.sql` in a text editor
 2. Copy the entire file contents
 3. Paste into a new Snowflake worksheet
 4. Click **"Run All"** or press `Ctrl+A` then `Ctrl+Enter`
@@ -340,7 +340,7 @@ In the **customer's** Snowflake account:
 
 ```sql
 -- Run extraction query
-@sql/extract_metrics_for_calculator.sql
+@sql/02_utilities/export_metrics.sql
 ```
 
 1. Click **"Download"** → Save as CSV
@@ -381,7 +381,7 @@ In **your** Snowflake account:
 
 ```sql
 -- Run cleanup script
-@sql/cleanup_cortex_monitoring.sql
+@sql/99_cleanup/cleanup_cortex_monitoring.sql
 ```
 
 **Options:**

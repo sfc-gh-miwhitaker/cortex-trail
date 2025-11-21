@@ -289,9 +289,27 @@ SELECT
     -- Rank by cost within category
     ROW_NUMBER() OVER (PARTITION BY service_category ORDER BY credits_used DESC) AS cost_rank
 FROM (
-    SELECT * FROM function_queries
+    SELECT 
+        service_category,
+        query_id,
+        operation_name,
+        model_name,
+        credits_used,
+        units_processed,
+        page_count,
+        document_count
+    FROM function_queries
     UNION ALL
-    SELECT * FROM document_queries
+    SELECT 
+        service_category,
+        query_id,
+        operation_name,
+        model_name,
+        credits_used,
+        units_processed,
+        page_count,
+        document_count
+    FROM document_queries
 )
 WHERE credits_used > 0
 ORDER BY credits_used DESC;
