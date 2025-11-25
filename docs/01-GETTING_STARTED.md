@@ -7,16 +7,16 @@
 
 ---
 
-## 👋 What You'll Get
+## 👋 What You'll Build
 
-Deploy this calculator and you'll have:
+Deploy this toolkit and you'll have:
 
-- ✅ **Real-time tracking** of all Cortex services (Analyst, Search, Functions, Document AI)
-- ✅ **Historical analysis** with interactive charts and service breakdown
-- ✅ **Cost projections** across multiple growth scenarios (3, 6, 12, 24 months)
-- ✅ **Multi-persona modeling** for teams with different user types
-- ✅ **Budget capacity planning** to determine user limits
-- ✅ **Export-ready estimates** for proposals and finance teams
+- ✅ **Real-time tracking** - 16 views monitoring all Cortex services (Analyst, Search, Functions, Document AI, Fine-tuning)
+- ✅ **Historical snapshots** - Automated daily captures with trend analysis
+- ✅ **Cost projections** - Multi-scenario forecasting (3, 6, 12, 24 months)
+- ✅ **Interactive calculator** - Streamlit app deployed from Git
+- ✅ **Query-level analysis** - Identify expensive individual queries
+- ✅ **Export-ready estimates** - For proposals and finance teams
 
 ---
 
@@ -87,9 +87,30 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 
 ---
 
-## 🚀 Step 1: Deploy Monitoring (5 minutes)
+## 🚀 Quick Deployment (Recommended)
 
-This creates 9 read-only views that track all Cortex service usage.
+**Option A: Deploy Everything in One Step (~2 minutes)**
+
+Copy/paste [`deploy_all.sql`](../deploy_all.sql) into Snowsight → Click "Run All"
+
+This deploys:
+- API Integration for GitHub access
+- Git Repository with project code
+- 16 monitoring views
+- Snapshot table + serverless task
+- Streamlit calculator app
+
+**Skip to Step 3 below after deployment completes.**
+
+---
+
+## 🛠️ Step-by-Step Deployment (Alternative)
+
+**Option B: Deploy Monitoring First, Then Calculator (~3-5 minutes)**
+
+### Step 1: Deploy Monitoring Views (~1 minute)
+
+This creates 16 read-only views that track all Cortex service usage.
 
 ### 1.1 Access Snowflake
 

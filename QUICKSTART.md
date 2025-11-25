@@ -8,15 +8,29 @@
 
 ## 👋 First Time Here?
 
-**This guide provides a detailed walkthrough in 3 steps:**
+**Follow these guides in order:**
 
-1. **Deploy Monitoring:** Run [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) with detailed validation (5 min)
-2. **Deploy Calculator:** Follow [Streamlit deployment instructions](#step-2-deploy-streamlit-calculator-5-minutes) with two methods (5 min)
-3. **Explore Features:** Learn how to use the calculator for cost analysis (5 min)
+1. **Deploy Everything:** Run [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight → Click "Run All" (~2 min)
+2. **Validate Deployment:** Review validation checks at end of script (~1 min)
+3. **Access Calculator:** Snowsight → Projects → Streamlit → CORTEX_COST_CALCULATOR (~1 min)
+4. **Explore Features:** Learn calculator features below (~5 min)
 
-**Total time: ~15 minutes** (includes learning and validation)
+**Total time: ~10 minutes** (includes learning)
 
-**Optional reading:** [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) - Architecture and concepts (5 min)
+---
+
+**Alternative: Step-by-step with detailed validation**
+
+1. **Deploy Monitoring:** Run [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) (~1 min)
+2. **Validate Views:** Run validation queries (see [Step 1 below](#step-1-deploy-monitoring-5-minutes)) (~2 min)
+3. **Deploy Calculator:** Follow [Streamlit deployment](#step-2-deploy-streamlit-calculator-5-minutes) (~3 min)
+4. **Explore Features:** Learn calculator capabilities (~5 min)
+
+**Total time: ~15 minutes** (includes detailed validation)
+
+---
+
+**Want deeper understanding:** [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) - Architecture and concepts (~5 min)
 
 ---
 
@@ -234,22 +248,27 @@ Now that you're set up, explore these capabilities:
 
 ## Cleanup (Optional)
 
-To remove all monitoring objects:
+To remove all project objects:
 
 ```sql
--- Run cleanup script
-@sql/99_cleanup/cleanup_cortex_monitoring.sql
+-- Copy/paste into Snowsight and click "Run All"
+-- See: sql/99_cleanup/cleanup_all.sql
 ```
 
 **What's removed:**
-- CORTEX_USAGE schema (all views, tables, tasks)
+- API Integration: SFE_CORTEX_TRAIL_GIT_API
+- Git Repository: SFE_CORTEX_TRAIL_REPO  
+- Streamlit App: CORTEX_COST_CALCULATOR
+- CORTEX_USAGE schema (16 views, 1 table, 1 task)
 
-**What's preserved (per cleanup rule):**
-- SNOWFLAKE_EXAMPLE database
-- Source data in ACCOUNT_USAGE
-- Customer data and applications
+**What's preserved (protected shared infrastructure):**
+- SNOWFLAKE_EXAMPLE database (may contain other demos)
+- SNOWFLAKE_EXAMPLE.GIT_REPOS schema (shared across demos)
+- Source data in SNOWFLAKE.ACCOUNT_USAGE (unaffected)
 
 **Time:** < 1 minute
+
+**Full cleanup script:** [`sql/99_cleanup/cleanup_all.sql`](sql/99_cleanup/cleanup_all.sql)
 
 ---
 

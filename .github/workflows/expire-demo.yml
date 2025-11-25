@@ -1,0 +1,103 @@
+name: Demo Expiration Check
+
+# Runs daily to check if demo has expired
+# Archives repository and makes it private after expiration date
+
+on:
+  schedule:
+    # Run daily at 9:00 AM UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:  # Allow manual trigger
+
+env:
+  EXPIRATION_DATE: '2025-12-25'
+
+jobs:
+  check-expiration:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Check expiration date
+        id: check_date
+        run: |
+          EXPIRATION=$(date -d "${{ env.EXPIRATION_DATE }}" +%s)
+          CURRENT=$(date +%s)
+          DAYS_UNTIL=$((($EXPIRATION - $CURRENT) / 86400))
+          
+          echo "days_until_expiration=$DAYS_UNTIL" >> $GITHUB_OUTPUT
+          
+          if [ $CURRENT -gt $EXPIRATION ]; then
+            echo "expired=true" >> $GITHUB_OUTPUT
+            echo "Demo has EXPIRED"
+          elif [ $DAYS_UNTIL -le 7 ]; then
+            echo "expired=false" >> $GITHUB_OUTPUT
+            echo "WARNING: Demo expires in $DAYS_UNTIL days"
+          else
+            echo "expired=false" >> $GITHUB_OUTPUT
+            echo "Demo expires in $DAYS_UNTIL days"
+          fi
+          
+      - name: Create expiration notice
+        if: steps.check_date.outputs.expired == 'true'
+        run: |
+          cat > EXPIRED.md << 'EOF'
+          # This Demo Has Expired
+          
+          **Expiration Date:** ${{ env.EXPIRATION_DATE }}
+          
+          This demonstration project has reached its 30-day expiration window and has been archived.
+          
+          ## Why Expiration?
+          
+          Demo projects include expiration dates to prevent:
+          - Outdated code examples being discovered and used
+          - Syntax drift as Snowflake features evolve
+          - Confusion about current best practices
+          
+          ## Getting Updated Version
+          
+          Contact the SE Community for:
+          - Updated version with current Snowflake features
+          - Latest best practices and patterns
+          - Current cost estimation models
+          
+          ## Project Archive
+          
+          This repository remains available in archived state for reference but should not be deployed.
+          
+          ---
+          
+          **Author:** SE Community  
+          **Archived:** $(date +%Y-%m-%d)  
+          **Original Expiration:** ${{ env.EXPIRATION_DATE }}
+          EOF
+          
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add EXPIRED.md
+          git commit -m "docs: add expiration notice"
+          git push
+          
+      - name: Archive and make private
+        if: steps.check_date.outputs.expired == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Archive the repository
+          gh repo archive ${{ github.repository }} --yes
+          
+          # Make repository private
+          gh repo edit ${{ github.repository }} --visibility private
+          
+          echo "Repository archived and made private due to expiration"
+          
+      - name: Send expiration warning
+        if: steps.check_date.outputs.expired == 'false' && steps.check_date.outputs.days_until_expiration <= 7
+        run: |
+          echo "::warning::Demo expires in ${{ steps.check_date.outputs.days_until_expiration }} days on ${{ env.EXPIRATION_DATE }}"
+

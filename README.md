@@ -1,4 +1,18 @@
-# Snowflake Cortex Cost Calculator v2.6
+![Reference Implementation](https://img.shields.io/badge/Reference-Implementation-blue)
+![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
+![Expires](https://img.shields.io/badge/Expires-2025--12--25-orange)
+
+# Snowflake Cortex Cost Calculator v2.9
+
+> **DEMONSTRATION PROJECT - EXPIRES: 2025-12-25**  
+> This demo uses Snowflake features current as of November 2025.  
+> After expiration, this repository will be archived and made private.
+
+**Author:** SE Community  
+**Purpose:** Reference implementation for Cortex cost monitoring and forecasting  
+**Created:** 2025-11-25 | **Expires:** 2025-12-25 (30 days) | **Status:** ACTIVE
+
+---
 
 **Monitor Cortex usage and forecast future costs with confidence.**
 
@@ -8,31 +22,31 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 ## 👋 First Time Here?
 
-**⚡ Fastest path - Deploy everything in ONE command:**
+**Follow these steps in order:**
 
-**Copy/paste [`deploy_all.sql`](deploy_all.sql) into Snowsight → Click "Run All" → DONE**
+1. **Deploy Everything (Recommended):** [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight → Click "Run All" (~2 min)
+2. **Access Calculator:** Snowsight → Projects → Streamlit → CORTEX_COST_CALCULATOR
+3. **Export Metrics (Optional):** [`sql/02_utilities/export_metrics.sql`](sql/02_utilities/export_metrics.sql) - For two-account SE workflow
 
-This deploys:
-- ✅ Monitoring views (16 views tracking all Cortex services)
-- ✅ Snapshot table + serverless task (daily snapshots)
-- ✅ Streamlit calculator (from GitHub)
-
-**Total deployment time: < 2 minutes** 🚀
+**Total setup time: ~2 minutes**
 
 ---
 
-**Alternative: Deploy monitoring & calculator separately:**
+**Alternative: Step-by-step deployment**
 
-1. **Deploy Monitoring (< 1 min):** Copy/paste [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) into Snowsight → Click "Run All"
-2. **Deploy Calculator (2-3 min):** [Jump to Streamlit deployment instructions ↓](#deploy-streamlit-calculator)
+1. **Deploy Monitoring:** [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) (~1 min)
+2. **View Results:** Query views or continue to Streamlit deployment
+3. **Deploy Calculator:** See [Streamlit deployment section ↓](#deploy-streamlit-calculator) (~2 min)
+
+**Total setup time: ~3-5 minutes**
 
 ---
 
 **Want more guidance?**
 
-- **Want to understand the architecture?** [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) - Concepts and design (5 min)
-- **Need detailed walkthrough?** [`docs/02-DEPLOYMENT_WALKTHROUGH.md`](docs/02-DEPLOYMENT_WALKTHROUGH.md) - Step-by-step deployment guide (15 min)
-- **Prefer action over reading?** Use the one-command deployment above
+- **Understand the architecture first:** [`docs/01-GETTING_STARTED.md`](docs/01-GETTING_STARTED.md) - Concepts and design (~5 min)
+- **Need detailed walkthrough:** [`docs/02-DEPLOYMENT_WALKTHROUGH.md`](docs/02-DEPLOYMENT_WALKTHROUGH.md) - Step-by-step with validation (~15 min)
+- **Troubleshooting help:** [`docs/03-TROUBLESHOOTING.md`](docs/03-TROUBLESHOOTING.md) - Common issues and solutions
 
 ---
 
@@ -60,7 +74,7 @@ This deploys:
 - ✅ **Document processing analysis** - compare PARSE_DOCUMENT vs Document AI
 - ✅ **Fine-tuning ROI tracking** - separate training vs inference costs
 - ✅ **Cortex Search optimization** - hourly cost tracking to find idle periods
-- ✅ **Latest pricing** - Oct 31, 2025 rates for Cortex LLM models (15+ available)
+- ✅ **Latest pricing** - Current rates for Cortex LLM models (15+ available)
 - ✅ **Serverless task** - automatic daily snapshots, no warehouse needed
 - ✅ **Snapshot table** - 4-5x faster queries
 - ✅ **Simplified Cost per User Calculator** for quick scoping
@@ -157,7 +171,7 @@ In **YOUR** Snowflake account, deploy the calculator once:
 
 ```sql
 -- Remove monitoring from CUSTOMER'S account when done
-@sql/99_cleanup/cleanup_cortex_monitoring.sql
+sql/99_cleanup/cleanup_all.sql
 ```
 
 ---
@@ -696,7 +710,7 @@ A: Minimal impact. View queries use your existing warehouse and consume trivial 
 A: Yes. All SQL is provided and can be modified. Add filters, change date ranges, or create custom aggregations.
 
 **Q: How do we remove everything?**  
-A: Run `@sql/99_cleanup/cleanup_cortex_monitoring.sql`. Complete removal in seconds. See [Cleanup](#cleanup--removal) section.
+A: Run `sql/99_cleanup/cleanup_all.sql`. Complete removal in seconds. See [Cleanup](#cleanup--removal) section.
 
 ### Data Questions
 
@@ -811,7 +825,7 @@ See `docs/03-TROUBLESHOOTING.md` for comprehensive troubleshooting guide includi
 
 ```sql
 -- Run cleanup script
-@sql/99_cleanup/cleanup_cortex_monitoring.sql
+sql/99_cleanup/cleanup_all.sql
 ```
 
 The script provides three removal options:
@@ -903,8 +917,7 @@ AI_Scoping/
 │   ├── 02_utilities/
 │   │   └── export_metrics.sql                      # Extract data for SE workflow
 │   └── 99_cleanup/
-│       ├── cleanup_all.sql                         # Remove everything (all objects)
-│       └── cleanup_cortex_monitoring.sql           # Remove monitoring objects only
+│       └── cleanup_all.sql                         # Remove all objects (complete cleanup)
 │
 └── streamlit/cortex_cost_calculator/
     ├── streamlit_app.py               # Full-featured calculator with v2.0 features
@@ -1015,8 +1028,33 @@ This tool is provided as-is for cost estimation purposes. Projections are estima
 
 ---
 
-**Maintained by:** Snowflake Solutions Engineering  
-**Last Updated:** November 12, 2025  
+## Demo Expiration Policy
+
+This demonstration project includes mandatory expiration controls:
+
+**Expiration Date:** 2025-12-25 (30 days from creation)
+
+**Enforcement Mechanisms:**
+1. **Deployment Check:** `deploy_all.sql` blocks execution after expiration date
+2. **Object Comments:** All Snowflake objects tagged with expiration date
+3. **GitHub Actions:** Automated workflow archives repository and makes it private after expiration
+4. **README Badge:** Visual expiration indicator at top of documentation
+
+**Why Expiration?**
+- Prevents outdated code examples from being discovered and deployed
+- Ensures demos reflect current Snowflake features and syntax
+- Protects users from deprecated patterns and best practices drift
+- Maintains quality standards across SE Community demonstrations
+
+**After Expiration:**
+- Repository will be automatically archived
+- Contact SE Community for updated version with current features
+- Expiration enforcement cannot be bypassed without modifying source code
+
+---
+
+**Maintained by:** SE Community  
+**Last Updated:** November 25, 2025  
 
 ---
 

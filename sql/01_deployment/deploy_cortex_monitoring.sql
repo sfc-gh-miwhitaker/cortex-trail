@@ -1,20 +1,88 @@
--- Cortex Usage Monitoring - Deployment Script
--- Target: SNOWFLAKE_EXAMPLE.CORTEX_USAGE
--- Prerequisites: IMPORTED PRIVILEGES on SNOWFLAKE database (or ACCOUNTADMIN role)
--- Safe to run: Idempotent, read-only views, no data modification
+/*******************************************************************************
+ * DEMO PROJECT: Cortex Cost Calculator - Monitoring Views Deployment
+ * 
+ * AUTHOR: SE Community
+ * CREATED: 2025-11-25
+ * EXPIRES: 2025-12-25 (30 days)
+ * 
+ * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2025-12-25
+ * ⚠️  NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
+ * 
+ * PURPOSE:
+ *   Creates comprehensive monitoring infrastructure for all Cortex services:
+ *   - 16 read-only views querying SNOWFLAKE.ACCOUNT_USAGE
+ *   - 1 snapshot table for historical tracking
+ *   - 1 serverless task for daily snapshots (3:00 AM Pacific)
+ * 
+ * TARGET LOCATION:
+ *   Database: SNOWFLAKE_EXAMPLE
+ *   Schema: CORTEX_USAGE
+ * 
+ * OBJECTS CREATED:
+ *   Views (16):
+ *   - V_CORTEX_ANALYST_DETAIL
+ *   - V_CORTEX_SEARCH_DETAIL
+ *   - V_CORTEX_SEARCH_SERVING_DETAIL
+ *   - V_CORTEX_FUNCTIONS_DETAIL
+ *   - V_CORTEX_FUNCTIONS_QUERY_DETAIL
+ *   - V_DOCUMENT_AI_DETAIL (legacy)
+ *   - V_CORTEX_DOCUMENT_PROCESSING_DETAIL
+ *   - V_CORTEX_FINE_TUNING_DETAIL
+ *   - V_AISQL_FUNCTION_SUMMARY
+ *   - V_AISQL_MODEL_COMPARISON
+ *   - V_AISQL_DAILY_TRENDS
+ *   - V_QUERY_COST_ANALYSIS
+ *   - V_CORTEX_DAILY_SUMMARY
+ *   - V_CORTEX_COST_EXPORT
+ *   - V_METERING_AI_SERVICES
+ *   - V_CORTEX_USAGE_HISTORY
+ * 
+ *   Tables (1):
+ *   - CORTEX_USAGE_SNAPSHOTS
+ * 
+ *   Tasks (1):
+ *   - TASK_DAILY_CORTEX_SNAPSHOT (serverless, runs 3:00 AM Pacific)
+ * 
+ * PREREQUISITES:
+ *   - IMPORTED PRIVILEGES on SNOWFLAKE database OR ACCOUNTADMIN role
+ *   - Active warehouse (any size)
+ * 
+ * DEPLOYMENT METHOD:
+ *   - Copy/paste into Snowsight OR
+ *   - Execute via EXECUTE IMMEDIATE FROM Git stage
+ * 
+ * DEPLOYMENT TIME: ~1 minute
+ * 
+ * CLEANUP:
+ *   See sql/99_cleanup/cleanup_all.sql
+ * 
+ * VERSION: 2.9 (ASCII-only, standards-compliant)
+ * LAST UPDATED: 2025-11-21
+ ******************************************************************************/
 
--- Create database and schema
+-- ===========================================================================
+-- SETUP: CREATE DATABASE & SCHEMA
+-- ===========================================================================
+
 CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
-    COMMENT = 'DEMO: Database for Cortex usage monitoring and cost analysis';
+    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.CORTEX_USAGE
-    COMMENT = 'DEMO: Schema containing views for Cortex service usage tracking (updated Nov 2024)';
+    COMMENT = 'DEMO: Cortex service usage monitoring and cost tracking (v2.9) | EXPIRES: 2025-12-25';
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
--- View 1: Cortex Analyst usage
+-- ===========================================================================
+-- MONITORING VIEWS: CORTEX SERVICE DETAIL VIEWS
+-- ===========================================================================
+-- These views query SNOWFLAKE.ACCOUNT_USAGE for raw Cortex service data
+-- Default retention: 90 days (adjust WHERE clause if needed)
+
+-- View 1: Cortex Analyst Usage
+-- Source: CORTEX_ANALYST_USAGE_HISTORY
+-- Granularity: Per-request with username tracking
 CREATE OR REPLACE VIEW V_CORTEX_ANALYST_DETAIL
-    COMMENT = 'DEMO: Cortex Analyst usage metrics'
+    COMMENT = 'DEMO: cortex-trail - Cortex Analyst per-request usage with user tracking'
 AS
 SELECT 
     'Cortex Analyst' AS service_type,
@@ -27,9 +95,11 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 2: Cortex Search usage
+-- View 2: Cortex Search Usage (Daily Aggregates)
+-- Source: CORTEX_SEARCH_DAILY_USAGE_HISTORY
+-- Granularity: Daily per service (no user tracking available)
 CREATE OR REPLACE VIEW V_CORTEX_SEARCH_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Cortex Search daily usage by service and model'
 AS
 SELECT 
     'Cortex Search' AS service_type,
@@ -45,9 +115,11 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_DAILY_USAGE_HISTORY
 WHERE usage_date >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 3:
+-- View 3: Cortex Search Serving Usage
+-- Source: CORTEX_SEARCH_SERVING_USAGE_HISTORY
+-- Granularity: Per-query serving metrics
 CREATE OR REPLACE VIEW V_CORTEX_SEARCH_SERVING_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Cortex Search serving query-level usage'
 AS
 SELECT 
     'Cortex Search Serving' AS service_type,
@@ -62,9 +134,11 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_SERVING_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 4:
+-- View 4: Cortex Functions Usage (Hourly Aggregates)
+-- Source: CORTEX_FUNCTIONS_USAGE_HISTORY
+-- Granularity: Hourly per function/model (no user tracking)
 CREATE OR REPLACE VIEW V_CORTEX_FUNCTIONS_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Cortex LLM functions hourly usage (COMPLETE, TRANSLATE, etc.)'
 AS
 SELECT 
     'Cortex Functions' AS service_type,
@@ -79,9 +153,11 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 5:
+-- View 5: Cortex Functions Query-Level Detail
+-- Source: CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY
+-- Granularity: Per-query with cost efficiency metrics
 CREATE OR REPLACE VIEW V_CORTEX_FUNCTIONS_QUERY_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Per-query Cortex function usage with cost-per-million-tokens'
 AS
 SELECT 
     'Cortex Functions Query' AS service_type,
@@ -98,9 +174,11 @@ SELECT
     END AS cost_per_million_tokens
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY;
 
--- View 6:
+-- View 6: Document AI Usage (Legacy)
+-- Source: DOCUMENT_AI_USAGE_HISTORY
+-- Note: Legacy service - use V_CORTEX_DOCUMENT_PROCESSING_DETAIL for new deployments
 CREATE OR REPLACE VIEW V_DOCUMENT_AI_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Legacy Document AI usage (use V_CORTEX_DOCUMENT_PROCESSING_DETAIL for new)'
 AS
 SELECT 
     'Document AI' AS service_type,
@@ -116,10 +194,12 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.DOCUMENT_AI_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 7:
--- Supports: Document AI, PARSE_DOCUMENT, AI_EXTRACT
+-- View 7: Cortex Document Processing (Unified)
+-- Source: CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY (GA: Mar 3, 2025)
+-- Supports: PARSE_DOCUMENT, AI_EXTRACT, Document AI
+-- Granularity: Per-query with page/document metrics
 CREATE OR REPLACE VIEW V_CORTEX_DOCUMENT_PROCESSING_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Unified document processing (PARSE_DOCUMENT, AI_EXTRACT) with efficiency metrics'
 AS
 SELECT 
     'Cortex Document Processing' AS service_type,
@@ -146,9 +226,11 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 8:
+-- View 8: Cortex Fine-Tuning Usage
+-- Source: CORTEX_FINE_TUNING_USAGE_HISTORY (GA: Oct 10, 2024)
+-- Granularity: Training job-level with token costs
 CREATE OR REPLACE VIEW V_CORTEX_FINE_TUNING_DETAIL
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Fine-tuning training costs with cost-per-million-tokens'
 AS
 SELECT 
     'Cortex Fine-tuning' AS service_type,
@@ -167,9 +249,15 @@ SELECT
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FINE_TUNING_USAGE_HISTORY
 WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 
--- View 9:
+-- ===========================================================================
+-- ANALYTICAL VIEWS: AGGREGATED ANALYSIS & SUMMARIES
+-- ===========================================================================
+-- These views provide higher-level analysis for cost forecasting
+
+-- View 9: AISQL Function Summary (Aggregated by Function/Model)
+-- Purpose: Function-level cost analysis for calculator inputs
 CREATE OR REPLACE VIEW V_AISQL_FUNCTION_SUMMARY
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Function-level summary for cost-per-million-tokens analysis'
 AS
 SELECT 
     function_name,
@@ -194,9 +282,10 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
 GROUP BY function_name, model_name
 ORDER BY total_credits DESC;
 
--- View 10:
+-- View 10: AISQL Model Comparison
+-- Purpose: Compare cost/performance across different LLM models
 CREATE OR REPLACE VIEW V_AISQL_MODEL_COMPARISON
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Model comparison for cost optimization (gemma, llama, mistral, etc.)'
 AS
 SELECT 
     model_name,
@@ -221,9 +310,10 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
 GROUP BY model_name
 ORDER BY total_credits DESC;
 
--- View 11:
+-- View 11: AISQL Daily Trends
+-- Purpose: Time-series analysis for trend detection
 CREATE OR REPLACE VIEW V_AISQL_DAILY_TRENDS
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Daily trends for serverless vs warehouse usage patterns'
 AS
 SELECT 
     DATE(start_time) AS usage_date,
@@ -239,9 +329,10 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
 GROUP BY DATE(start_time), function_name, model_name
 ORDER BY usage_date DESC, daily_credits DESC;
 
--- View 12:
+-- View 12: Query-Level Cost Analysis (NEW in v2.6)
+-- Purpose: Identify most expensive individual queries across all services
 CREATE OR REPLACE VIEW V_QUERY_COST_ANALYSIS
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Most expensive queries across LLM functions and document processing'
 AS
 WITH function_queries AS (
     SELECT 
@@ -314,9 +405,10 @@ FROM (
 WHERE credits_used > 0
 ORDER BY credits_used DESC;
 
--- View 13:
+-- View 13: Cortex Daily Summary (Master Rollup)
+-- Purpose: Primary view for historical analysis across all services
 CREATE OR REPLACE VIEW V_CORTEX_DAILY_SUMMARY
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Master daily rollup across all Cortex services for trend analysis'
 AS
 WITH all_services AS (
     -- Cortex Analyst
@@ -421,9 +513,10 @@ FROM all_services
 GROUP BY usage_date, service_type
 ORDER BY usage_date DESC, total_credits DESC;
 
--- View 14:
+-- View 14: Cortex Cost Export (Calculator Input Format)
+-- Purpose: Pre-formatted for Streamlit calculator CSV uploads
 CREATE OR REPLACE VIEW V_CORTEX_COST_EXPORT
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - Export-ready format for cost calculator with projected costs'
 AS
 SELECT 
     usage_date AS date,
@@ -442,9 +535,10 @@ FROM V_CORTEX_DAILY_SUMMARY
 -- No date filter here - let the extraction query control the date range
 ORDER BY date DESC, total_credits DESC;
 
--- View 15:
+-- View 15: Metering AI Services (Aggregate Credit View)
+-- Purpose: High-level view of all AI service credits from metering
 CREATE OR REPLACE VIEW V_METERING_AI_SERVICES
-    COMMENT = 'DEMO: Cortex usage tracking view - see header for version history'
+    COMMENT = 'DEMO: cortex-trail - AI_SERVICES metering rollup for compute vs cloud services credits'
 AS
 SELECT 
     usage_date,
@@ -458,16 +552,18 @@ WHERE service_type = 'AI_SERVICES'
 GROUP BY usage_date, service_type
 ORDER BY usage_date DESC;
 
--- Historical Snapshot Table: CORTEX_USAGE_SNAPSHOTS (ENHANCED in v2.6)
+-- ===========================================================================
+-- HISTORICAL SNAPSHOT TABLE
+-- ===========================================================================
+-- Purpose: Persistent storage for daily snapshots (4-5x faster than querying views)
+-- Populated by: TASK_DAILY_CORTEX_SNAPSHOT (runs 3:00 AM Pacific)
 --
--- PERFORMANCE NOTE: Clustering Key Threshold
--- A clustering key should only be considered if this table exceeds 1 TB in size.
--- Current demo usage: < 1 GB (clustering would waste credits at this scale)
--- Potential clustering key for 1+ TB tables: CLUSTER BY (usage_date, service_type)
--- Validate need using: SELECT SYSTEM$CLUSTERING_INFORMATION('CORTEX_USAGE_SNAPSHOTS')
---
--- See: .cursor/docs/DESIGN_DECISIONS.md for detailed rationale
---
+-- PERFORMANCE NOTE: Clustering Key NOT Recommended for Demo Scale
+-- - Clustering only beneficial for tables > 1 TB
+-- - Current demo usage: < 1 GB (clustering would waste credits)
+-- - If scaling to 1+ TB: Consider CLUSTER BY (usage_date, service_type)
+-- - Validate need: SELECT SYSTEM$CLUSTERING_INFORMATION('CORTEX_USAGE_SNAPSHOTS')
+
 CREATE TABLE IF NOT EXISTS CORTEX_USAGE_SNAPSHOTS (
     snapshot_date DATE NOT NULL,
     service_type VARCHAR(50) NOT NULL,
@@ -490,27 +586,30 @@ CREATE TABLE IF NOT EXISTS CORTEX_USAGE_SNAPSHOTS (
     credits_per_page NUMBER(38,6),
     credits_per_document NUMBER(38,6),
     inserted_at TIMESTAMP_LTZ DEFAULT CURRENT_TIMESTAMP()
-    -- Note: No primary key due to nullable function_name/model_name columns
-    -- Uniqueness enforced by MERGE logic in task
+    -- Note: No primary key constraint (nullable function_name/model_name columns)
+    -- Uniqueness enforced by MERGE statement in TASK_DAILY_CORTEX_SNAPSHOT
 )
-COMMENT = 'DEMO: Daily snapshots of Cortex usage including AISQL function, model, and document processing details';
+COMMENT = 'DEMO: cortex-trail - Daily usage snapshots with function/model/document granularity for fast queries';
 
--- Scheduled Task: TASK_DAILY_CORTEX_SNAPSHOT
--- Schedule: Daily at 3:00 AM (after ACCOUNT_USAGE data is typically refreshed)
+-- ===========================================================================
+-- SERVERLESS TASK: DAILY SNAPSHOT CAPTURE
+-- ===========================================================================
+-- Schedule: Daily at 3:00 AM Pacific (after ACCOUNT_USAGE refresh)
 -- Compute: Serverless (Snowflake-managed, no warehouse required)
--- Now captures document processing and fine-tuning data
+-- Purpose: Captures previous 2 days of usage into CORTEX_USAGE_SNAPSHOTS table
 --
--- COST GUARDRAILS (v2.6+):
--- SERVERLESS_TASK_MAX_STATEMENT_SIZE caps maximum warehouse size to prevent runaway costs
--- Normal execution: XSMALL (~$0.001-0.003/day, $0.03-0.09/month)
--- Maximum with cap: SMALL (~$0.01/day, $0.30/month)
--- Provides 10x safety margin for forgotten demo deployments
---
+-- COST GUARDRAILS:
+-- - USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE: XSMALL (start small)
+-- - SERVERLESS_TASK_MAX_STATEMENT_SIZE: SMALL (cost cap for runaway queries)
+-- - Expected cost: ~$0.001-0.003/day ($0.03-0.09/month)
+-- - Maximum cost with cap: ~$0.01/day ($0.30/month)
+-- - Provides 10x safety margin for forgotten demo deployments
+
 CREATE OR REPLACE TASK TASK_DAILY_CORTEX_SNAPSHOT
     SCHEDULE = 'USING CRON 0 3 * * * America/Los_Angeles'
     USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL'
     SERVERLESS_TASK_MAX_STATEMENT_SIZE = 'SMALL'
-    COMMENT = 'DEMO: Daily serverless task with cost guardrails capturing Cortex usage snapshots including AISQL functions, document processing, and fine-tuning'
+    COMMENT = 'DEMO: cortex-trail - Serverless daily snapshot task with cost guardrails (3:00 AM Pacific)'
 AS
 MERGE INTO CORTEX_USAGE_SNAPSHOTS AS target
 USING (
@@ -647,14 +746,14 @@ WHEN NOT MATCHED THEN
             source.serverless_calls, source.compute_calls, source.total_pages_processed, 
             source.total_documents_processed, source.credits_per_page, source.credits_per_document);
 
--- Resume the task to activate it
+-- Resume the task to activate it (STARTED state)
 ALTER TASK TASK_DAILY_CORTEX_SNAPSHOT RESUME;
 
--- View 16:
--- Optimized for Streamlit cost calculator queries
--- Includes document processing metrics and trend analysis
+-- View 16: Cortex Usage History (Snapshot-Backed for Performance)
+-- Purpose: Fast queries for Streamlit calculator (reads from snapshot table)
+-- Performance: 4-5x faster than querying ACCOUNT_USAGE views directly
 CREATE OR REPLACE VIEW V_CORTEX_USAGE_HISTORY
-    COMMENT = 'DEMO: Historical snapshot view for Streamlit cost calculator with document processing metrics and trend analysis'
+    COMMENT = 'DEMO: cortex-trail - Historical snapshots with trend analysis (optimized for Streamlit calculator)'
 AS
 SELECT 
     usage_date AS date,
@@ -683,85 +782,94 @@ SELECT
 FROM CORTEX_USAGE_SNAPSHOTS
 ORDER BY date DESC, total_credits DESC;
 
--- DEPLOYMENT VALIDATION (Quick Check)
+-- ===========================================================================
+-- DEPLOYMENT VALIDATION
+-- ===========================================================================
 
--- Verify 16 views were created
-SELECT COUNT(*) AS view_count
+-- Verify 16 views created
+SELECT 
+    COUNT(*) AS view_count,
+    CASE 
+        WHEN COUNT(*) = 16 THEN 'SUCCESS: All 16 views created'
+        ELSE 'WARNING: Expected 16 views, found ' || COUNT(*)
+    END AS validation_status
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
     AND TABLE_CATALOG = 'SNOWFLAKE_EXAMPLE';
--- Expected: 16 (was 10 in v2.5)
 
--- Verify 1 table was created
-SELECT COUNT(*) AS table_count
+-- Check 2: Verify snapshot table created
+SELECT 
+    COUNT(*) AS table_count,
+    CASE 
+        WHEN COUNT(*) = 1 THEN 'SUCCESS: Snapshot table created'
+        ELSE 'WARNING: Snapshot table not found'
+    END AS validation_status
 FROM SNOWFLAKE.INFORMATION_SCHEMA.TABLES
 WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
     AND TABLE_CATALOG = 'SNOWFLAKE_EXAMPLE'
-    AND TABLE_TYPE = 'BASE TABLE';
--- Expected: 1
+    AND TABLE_TYPE = 'BASE TABLE'
+    AND TABLE_NAME = 'CORTEX_USAGE_SNAPSHOTS';
 
--- Verify task was created and is running
+-- Verify task created and running
 SHOW TASKS LIKE 'TASK_DAILY_CORTEX_SNAPSHOT' IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
--- Expected: STATE = 'started', SCHEDULE should show CRON expression
+-- Expected: STATE = 'started', SCHEDULE shows CRON expression
 
--- Check task execution history (if any runs have occurred)
+-- Test data access (empty is normal if no Cortex usage yet)
 SELECT 
-    NAME,
-    STATE,
-    SCHEDULED_TIME,
-    COMPLETED_TIME,
-    RETURN_VALUE
-FROM TABLE(INFORMATION_SCHEMA.TASK_HISTORY(
-    TASK_NAME => 'SNOWFLAKE_EXAMPLE.CORTEX_USAGE.TASK_DAILY_CORTEX_SNAPSHOT',
-    SCHEDULED_TIME_RANGE_START => DATEADD('day', -7, CURRENT_TIMESTAMP())
-))
-ORDER BY SCHEDULED_TIME DESC
-LIMIT 5;
-
--- Test data access (will be empty if no Cortex usage yet)
-SELECT COUNT(*) AS row_count 
+    COUNT(*) AS row_count,
+    CASE 
+        WHEN COUNT(*) > 0 THEN 'SUCCESS: Data available - views are working'
+        ELSE 'INFO: No data yet (normal if account has no Cortex usage)'
+    END AS data_status
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 
--- Test new v2.6 views
-SELECT COUNT(*) AS doc_processing_count
+-- Test new document processing view (v2.9)
+SELECT 
+    COUNT(*) AS row_count,
+    'Document processing view accessible' AS validation_step
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DOCUMENT_PROCESSING_DETAIL;
 
-SELECT COUNT(*) AS query_analysis_count
+-- Test query cost analysis view (v2.9)
+SELECT 
+    COUNT(*) AS row_count,
+    'Query cost analysis view accessible' AS validation_step
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_QUERY_COST_ANALYSIS;
 
--- If errors occur above, check ACCOUNT_USAGE permissions
--- GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
+-- ===========================================================================
+-- TROUBLESHOOTING
+-- ===========================================================================
+UNION ALL SELECT ''
+UNION ALL SELECT 'If errors occur during validation:'
+UNION ALL SELECT ''
+UNION ALL SELECT '1. "Permission denied" on ACCOUNT_USAGE views'
+UNION ALL SELECT '   → Need IMPORTED PRIVILEGES on SNOWFLAKE database'
+UNION ALL SELECT '   → Run as ACCOUNTADMIN: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <your_role>;'
+UNION ALL SELECT ''
+UNION ALL SELECT '2. Views return no data'
+UNION ALL SELECT '   → Normal if account has no Cortex usage yet'
+UNION ALL SELECT '   → Views will populate after using Cortex services (Analyst, Search, Functions)'
+UNION ALL SELECT ''
+UNION ALL SELECT '3. Task not starting'
+UNION ALL SELECT '   → Verify task state: SHOW TASKS IN SCHEMA CORTEX_USAGE;'
+UNION ALL SELECT '   → If suspended: ALTER TASK TASK_DAILY_CORTEX_SNAPSHOT RESUME;';
 
--- Created Objects (v2.6):
--- VIEWS (16 - up from 13 in v2.5):
--- 1. V_CORTEX_ANALYST_DETAIL - Cortex Analyst usage (has USERNAME)
--- 2. V_CORTEX_SEARCH_DETAIL - Cortex Search daily usage (no user tracking)
--- 3. V_CORTEX_SEARCH_SERVING_DETAIL - Cortex Search serving usage (no user tracking)
--- 4. V_CORTEX_FUNCTIONS_DETAIL - Cortex Functions hourly aggregates (no user tracking)
--- 5. V_CORTEX_FUNCTIONS_QUERY_DETAIL - Cortex Functions query-level (ENHANCED in v2.6)
--- 6. V_DOCUMENT_AI_DETAIL - Document AI usage (legacy, still supported)
--- 7. V_CORTEX_DOCUMENT_PROCESSING_DETAIL - Unified document processing (NEW in v2.6)
--- 8. V_CORTEX_FINE_TUNING_DETAIL - Fine-tuning training costs (NEW in v2.6)
--- 9. V_AISQL_FUNCTION_SUMMARY - AISQL function summary
--- 10. V_AISQL_MODEL_COMPARISON - Model comparison
--- 11. V_AISQL_DAILY_TRENDS - Daily AISQL trends
--- 12. V_QUERY_COST_ANALYSIS - Most expensive queries (NEW in v2.6)
--- 13. V_CORTEX_DAILY_SUMMARY - Daily rollup across all services (ENHANCED in v2.6)
--- 14. V_CORTEX_COST_EXPORT - Pre-formatted for calculator (ENHANCED in v2.6)
--- 15. V_METERING_AI_SERVICES - AI services metering rollup
--- 16. V_CORTEX_USAGE_HISTORY - Historical snapshots with trend analysis (ENHANCED in v2.6)
+-- ===========================================================================
+-- DEPLOYMENT SUMMARY
+-- ===========================================================================
+-- Objects Created (v2.9):
+--   VIEWS (16): V_CORTEX_ANALYST_DETAIL, V_CORTEX_SEARCH_DETAIL,
+--               V_CORTEX_SEARCH_SERVING_DETAIL, V_CORTEX_FUNCTIONS_DETAIL,
+--               V_CORTEX_FUNCTIONS_QUERY_DETAIL, V_DOCUMENT_AI_DETAIL,
+--               V_CORTEX_DOCUMENT_PROCESSING_DETAIL, V_CORTEX_FINE_TUNING_DETAIL,
+--               V_AISQL_FUNCTION_SUMMARY, V_AISQL_MODEL_COMPARISON,
+--               V_AISQL_DAILY_TRENDS, V_QUERY_COST_ANALYSIS, V_CORTEX_DAILY_SUMMARY,
+--               V_CORTEX_COST_EXPORT, V_METERING_AI_SERVICES, V_CORTEX_USAGE_HISTORY
+--   TABLES (1): CORTEX_USAGE_SNAPSHOTS (snapshot storage)
+--   TASKS (1): TASK_DAILY_CORTEX_SNAPSHOT (serverless, 3:00 AM Pacific)
 --
--- TABLES (1):
--- 1. CORTEX_USAGE_SNAPSHOTS - Daily snapshots of usage data (ENHANCED in v2.6)
---
--- TASKS (1):
--- 1. TASK_DAILY_CORTEX_SNAPSHOT - Runs daily at 3 AM (ENHANCED in v2.6)
---
--- NEW FEATURES IN v2.6:
--- - CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY support (GA: Mar 3, 2025)
--- - CORTEX_FINE_TUNING_USAGE_HISTORY support (GA: Oct 10, 2024)
--- - Query-level cost analysis across all services
--- - Enhanced document processing metrics (pages, documents, credits per page)
--- - Better serverless vs warehouse tracking
--- - Improved validation and testing queries
+-- Next Steps:
+--   - Query views: SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 10
+--   - Deploy calculator: Run deploy_all.sql from project root
+--   - Export metrics: See sql/02_utilities/export_metrics.sql
+
 

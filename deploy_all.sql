@@ -1,30 +1,36 @@
 /*******************************************************************************
- * DEMO PROJECT: Cortex Cost Calculator - Complete Deployment
+ * DEMO PROJECT: Cortex Cost Calculator - Git-Integrated Deployment
  * 
- * ⚠️  NOT FOR PRODUCTION USE - EXAMPLE IMPLEMENTATION ONLY
+ * AUTHOR: SE Community
+ * CREATED: 2025-11-25
+ * EXPIRES: 2025-12-25 (30 days)
+ * 
+ * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2025-12-25
+ * ⚠️  NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
  * 
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
  *   1. Copy this ENTIRE script
  *   2. Open Snowsight → New Worksheet
  *   3. Paste the script
  *   4. Click "Run All"
- *   5. Wait ~1-2 minutes for complete deployment
+ *   5. Wait ~2 minutes for complete deployment
  * 
  * PURPOSE:
- *   Single-script deployment for entire Cortex Cost Calculator toolkit:
- *   - Monitoring views (16 views tracking all Cortex services)
- *   - Snapshot table for historical tracking
- *   - Serverless task for daily snapshots
- *   - Streamlit calculator app (deployed from Git repository)
+ *   Single-script deployment leveraging Snowflake native Git integration.
+ *   Creates API Integration → Git Repository → Executes SQL from Git → 
+ *   Deploys Streamlit from Git.
  * 
- * WHAT GETS CREATED:
- *   Account-Level Objects:
- *   - API Integration: CORTEX_TRAIL_GIT_API (GitHub access)
+ * OBJECTS CREATED:
  * 
- *   Database Objects (SNOWFLAKE_EXAMPLE):
- *   - Git Repository: CORTEX_TRAIL_REPO
+ *   Account-Level:
+ *   - API Integration: SFE_CORTEX_TRAIL_GIT_API
+ *   
+ *   Database-Level (SNOWFLAKE_EXAMPLE):
+ *   - Database: SNOWFLAKE_EXAMPLE
+ *   - Schema: GIT_REPOS (shared infrastructure)
  *   - Schema: CORTEX_USAGE
- *   - 16 monitoring views
+ *   - Git Repository: SFE_CORTEX_TRAIL_REPO
+ *   - 16 monitoring views (V_CORTEX_*)
  *   - 1 snapshot table (CORTEX_USAGE_SNAPSHOTS)
  *   - 1 serverless task (TASK_DAILY_CORTEX_SNAPSHOT)
  *   - 1 Streamlit app (CORTEX_COST_CALCULATOR)
@@ -34,141 +40,207 @@
  * 
  * PREREQUISITES:
  *   - ACCOUNTADMIN role OR role with:
- *     * CREATE DATABASE privilege
- *     * CREATE API INTEGRATION privilege  
- *     * CREATE GIT REPOSITORY privilege
+ *     * CREATE DATABASE
+ *     * CREATE API INTEGRATION  
+ *     * CREATE GIT REPOSITORY
  *     * IMPORTED PRIVILEGES on SNOWFLAKE database
- *   - Active warehouse (any size, SMALL is fine)
+ *   - Active warehouse (XSMALL or larger)
  * 
- * DEPLOYMENT TIME: < 2 minutes
+ * DEPLOYMENT TIME: ~2 minutes
  * 
  * CLEANUP:
- *   See sql/99_cleanup/cleanup_all.sql for complete removal
+ *   Run sql/99_cleanup/cleanup_all.sql for complete removal
  * 
- * VERSION: 2.7 (Git-integrated deployment)
- * LAST UPDATED: 2025-11-21
+ * VERSION: 2.9 (Standards-compliant: SFE_ prefixes, ASCII-only)
+ * LAST UPDATED: 2025-11-25
  ******************************************************************************/
 
 -- ===========================================================================
--- STEP 1: GITHUB API INTEGRATION (Required for Git Repository access)
+-- EXPIRATION CHECK
 -- ===========================================================================
+-- Demo expiration enforcement - prevents deployment after 30-day window
 
-CREATE OR REPLACE API INTEGRATION CORTEX_TRAIL_GIT_API
-  API_PROVIDER = git_https_api
-  API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
-  ENABLED = TRUE
-  COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repo access';
-
--- Verify API integration created
-SHOW API INTEGRATIONS LIKE 'CORTEX_TRAIL_GIT_API';
+DO $$
+DECLARE
+    expiration_date DATE := '2025-12-25'::DATE;
+    days_until_expiration INT;
+BEGIN
+    days_until_expiration := DATEDIFF('day', CURRENT_DATE(), expiration_date);
+    
+    IF (CURRENT_DATE() > expiration_date) THEN
+        RAISE 'DEPLOYMENT BLOCKED: This demo expired on ' || expiration_date::STRING || '. Please use an updated version from the SE Community repository.';
+    ELSEIF (days_until_expiration <= 7) THEN
+        RETURN 'WARNING: Demo expires in ' || days_until_expiration || ' days (' || expiration_date::STRING || '). Consider using updated version.';
+    ELSE
+        RETURN 'Expiration check passed. Demo expires: ' || expiration_date::STRING || ' (' || days_until_expiration || ' days remaining)';
+    END IF;
+END;
+$$;
 
 -- ===========================================================================
--- STEP 2: DATABASE & SCHEMA SETUP
+-- STEP 1: CREATE API INTEGRATION (Account-level object for GitHub access)
 -- ===========================================================================
+-- Requires ACCOUNTADMIN or CREATE API INTEGRATION privilege
+-- Creates: CORTEX_TRAIL_GIT_API
+
+CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
+    API_PROVIDER = git_https_api
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
+    ENABLED = TRUE
+    COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2025-12-25';
+
+-- ===========================================================================
+-- STEP 2: CREATE DATABASE & SCHEMAS
+-- ===========================================================================
+-- Creates: SNOWFLAKE_EXAMPLE database (demo container)
+-- Creates: GIT_REPOS schema (shared infrastructure)
+-- Creates: CORTEX_USAGE schema (will be created by monitoring script)
 
 CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
-    COMMENT = 'DEMO: Database for Cortex usage monitoring and cost analysis';
+    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2025-12-25';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.GIT_REPOS
-    COMMENT = 'DEMO: Schema for Git repository stages (shared across demos)';
+    COMMENT = 'DEMO: Shared schema for Git repository stages across demo projects | EXPIRES: 2025-12-25';
 
+-- Set context for Git repository creation
 USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
 
 -- ===========================================================================
--- STEP 3: GIT REPOSITORY SETUP
+-- STEP 3: CREATE GIT REPOSITORY
 -- ===========================================================================
+-- Creates: CORTEX_TRAIL_REPO in GIT_REPOS schema
+-- Connects to: https://github.com/sfc-gh-miwhitaker/cortex-trail
 
-CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO
-  API_INTEGRATION = CORTEX_TRAIL_GIT_API
-  ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
-  COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit repository';
+CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO
+    API_INTEGRATION = SFE_CORTEX_TRAIL_GIT_API
+    ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
+    COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2025-12-25';
 
--- Fetch latest code from GitHub
-ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO FETCH;
-
--- Verify repository setup
-SHOW GIT REPOSITORIES LIKE 'CORTEX_TRAIL_REPO' IN SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
+ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
 
 -- ===========================================================================
 -- STEP 4: EXECUTE MONITORING DEPLOYMENT FROM GIT
 -- ===========================================================================
+-- Executes: sql/01_deployment/deploy_cortex_monitoring.sql from Git
+-- Creates: CORTEX_USAGE schema, 16 views, 1 table, 1 task
+-- Pattern: EXECUTE IMMEDIATE FROM Git stage (Snowflake native)
 
--- Execute the monitoring deployment script directly from Git repository
-EXECUTE IMMEDIATE FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO/branches/main/sql/01_deployment/deploy_cortex_monitoring.sql;
+EXECUTE IMMEDIATE FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/sql/01_deployment/deploy_cortex_monitoring.sql;
 
 -- ===========================================================================
--- STEP 5: STREAMLIT APP DEPLOYMENT FROM GIT
+-- STEP 5: DEPLOY STREAMLIT APP FROM GIT
 -- ===========================================================================
+-- Creates: CORTEX_COST_CALCULATOR Streamlit app
+-- Location: SNOWFLAKE_EXAMPLE.CORTEX_USAGE
+-- Source: Git repository (live-linked, auto-updates on fetch)
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
--- Create Streamlit app pointing to Git repository
 CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR
-  FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO/branches/main/streamlit/cortex_cost_calculator/
-  MAIN_FILE = 'streamlit_app.py'
-  QUERY_WAREHOUSE = CURRENT_WAREHOUSE()
-  TITLE = 'Cortex Cost Calculator'
-  COMMENT = 'DEMO: cortex-trail - Interactive Cortex usage analysis and cost forecasting tool';
+    FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/streamlit/cortex_cost_calculator/
+    MAIN_FILE = 'streamlit_app.py'
+    QUERY_WAREHOUSE = CURRENT_WAREHOUSE()
+    TITLE = 'Cortex Cost Calculator'
+    COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2025-12-25';
 
 -- ===========================================================================
 -- DEPLOYMENT COMPLETE
 -- ===========================================================================
-
-SELECT '✅ DEPLOYMENT COMPLETE!' AS status;
-
-SELECT 'Created Objects:' AS summary
-UNION ALL SELECT '  ✓ API Integration: CORTEX_TRAIL_GIT_API'
-UNION ALL SELECT '  ✓ Git Repository: SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO'
-UNION ALL SELECT '  ✓ Database: SNOWFLAKE_EXAMPLE'
-UNION ALL SELECT '  ✓ Schema: CORTEX_USAGE (16 views + 1 table + 1 task)'
-UNION ALL SELECT '  ✓ Streamlit App: CORTEX_COST_CALCULATOR'
-UNION ALL SELECT ''
-UNION ALL SELECT '📊 Next Steps:'
-UNION ALL SELECT '  1. Access Streamlit: Snowsight → Projects → Streamlit → CORTEX_COST_CALCULATOR'
-UNION ALL SELECT '  2. Query views: SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 10'
-UNION ALL SELECT '  3. Monitor snapshots: Task runs daily at 3:00 AM'
-UNION ALL SELECT ''
-UNION ALL SELECT '⏱️  Total deployment time: < 2 minutes'
-UNION ALL SELECT '🧹 Cleanup: Run sql/cleanup_all.sql to remove everything';
+-- Objects Created:
+--
+-- Account-Level:
+--   - API Integration: SFE_CORTEX_TRAIL_GIT_API
+--
+-- Database-Level (SNOWFLAKE_EXAMPLE):
+--   - Database: SNOWFLAKE_EXAMPLE
+--   - Schema: GIT_REPOS (shared infrastructure)
+--   - Schema: CORTEX_USAGE
+--   - Git Repository: SFE_CORTEX_TRAIL_REPO
+--   - Views: 16 monitoring views (V_CORTEX_*)
+--   - Table: CORTEX_USAGE_SNAPSHOTS
+--   - Task: TASK_DAILY_CORTEX_SNAPSHOT (serverless)
+--   - Streamlit App: CORTEX_COST_CALCULATOR
+--
+-- Next Steps:
+--   1. Access app: Snowsight -> Projects -> Streamlit -> CORTEX_COST_CALCULATOR
+--   2. Query views: SELECT * FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY LIMIT 10
+--   3. Monitor task: Task runs daily at 3:00 AM Pacific
+--
+-- Cleanup:
+--   Run sql/99_cleanup/cleanup_all.sql to remove all objects
+--
+-- Total deployment time: ~2 minutes
 
 -- ===========================================================================
--- VALIDATION QUERIES (Optional - verify everything works)
+-- VALIDATION - Verify Deployment Success
 -- ===========================================================================
 
--- Verify Git repository accessible
-LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO/branches/main/ PATTERN='.*\.sql';
+-- Check 1: Git repository accessible and contains SQL files
+LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/sql/ PATTERN='.*\.sql';
 
--- Verify monitoring views created
-SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+-- Check 2: Monitoring views created (should be 16)
+SELECT 
+    CASE 
+        WHEN COUNT(*) = 16 THEN 'SUCCESS: All 16 monitoring views created'
+        ELSE 'WARNING: Expected 16 views, found ' || COUNT(*) || ' views'
+    END AS validation_status
+FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
+WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
+    AND TABLE_CATALOG = 'SNOWFLAKE_EXAMPLE';
 
--- Verify Streamlit app created
-SHOW STREAMLITS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+-- Check 3: Snapshot table exists
+SELECT 
+    CASE 
+        WHEN COUNT(*) = 1 THEN 'SUCCESS: Snapshot table created'
+        ELSE 'WARNING: Snapshot table not found'
+    END AS validation_status
+FROM SNOWFLAKE.INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
+    AND TABLE_CATALOG = 'SNOWFLAKE_EXAMPLE'
+    AND TABLE_NAME = 'CORTEX_USAGE_SNAPSHOTS';
 
--- Test data access (will be empty if no Cortex usage yet)
-SELECT COUNT(*) AS row_count 
+-- Check 4: Serverless task created and running
+SHOW TASKS LIKE 'TASK_DAILY_CORTEX_SNAPSHOT' IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+
+-- Check 5: Streamlit app accessible
+SHOW STREAMLITS LIKE 'CORTEX_COST_CALCULATOR' IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+
+-- Check 6: Test data access (empty result is normal if no Cortex usage yet)
+SELECT 
+    COUNT(*) AS row_count,
+    CASE 
+        WHEN COUNT(*) > 0 THEN 'Data available - views are working'
+        ELSE 'No data yet (normal if account has no Cortex usage)'
+    END AS data_status
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 
 -- ===========================================================================
--- TROUBLESHOOTING
+-- TROUBLESHOOTING GUIDE
 -- ===========================================================================
 
-/*
-ISSUE: "API integration not found"
-FIX: Ensure you have ACCOUNTADMIN or CREATE API INTEGRATION privilege
-
-ISSUE: "Git repository fetch failed"
-FIX: Verify GitHub repo is public: https://github.com/sfc-gh-miwhitaker/cortex-trail
-
-ISSUE: "EXECUTE IMMEDIATE FROM failed"
-FIX: Verify warehouse is running and Git repo was fetched successfully
-
-ISSUE: "Streamlit app creation failed"
-FIX: Verify MAIN_FILE path exists in repo:
-     LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO/branches/main/streamlit/cortex_cost_calculator/;
-
-ISSUE: "Views return no data"
-SOLUTION: This is normal if account has no Cortex usage yet. Views will populate as you use Cortex services.
-
-For detailed troubleshooting: See docs/03-TROUBLESHOOTING.md in the GitHub repository
-*/
+-- Common Issues and Solutions:
+--
+-- 1. "API integration not found"
+--    -> Requires ACCOUNTADMIN or CREATE API INTEGRATION privilege
+--    -> Switch role: USE ROLE ACCOUNTADMIN;
+--
+-- 2. "Git repository fetch failed"
+--    -> Verify repo is public: https://github.com/sfc-gh-miwhitaker/cortex-trail
+--    -> Check network connectivity to GitHub
+--
+-- 3. "EXECUTE IMMEDIATE FROM failed"
+--    -> Verify warehouse is running
+--    -> Verify Git fetch completed successfully
+--    -> Check file exists: LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.CORTEX_TRAIL_REPO/branches/main/sql/01_deployment/;
+--
+-- 4. "Streamlit app creation failed"
+--    -> Verify streamlit_app.py exists in Git repo
+--    -> Check path: LIST @...SFE_CORTEX_TRAIL_REPO/branches/main/streamlit/cortex_cost_calculator/;
+--
+-- 5. "Views return no data"
+--    -> Normal if account has no Cortex usage yet
+--    -> Views will populate after using Cortex services
+--    -> Check permissions: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <your_role>;
+--
+-- Detailed docs: See docs/03-TROUBLESHOOTING.md in GitHub repository
 
