@@ -139,13 +139,17 @@ EXECUTE IMMEDIATE FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branch
 -- Creates: CORTEX_COST_CALCULATOR Streamlit app
 -- Location: SNOWFLAKE_EXAMPLE.CORTEX_USAGE
 -- Source: Git repository (live-linked, auto-updates on fetch)
+-- Note: Uses COMPUTE_WH as default. Change to your warehouse if different.
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+
+-- Capture current warehouse for Streamlit deployment
+SET streamlit_warehouse = (SELECT CURRENT_WAREHOUSE());
 
 CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR
     FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/streamlit/cortex_cost_calculator/
     MAIN_FILE = 'streamlit_app.py'
-    QUERY_WAREHOUSE = CURRENT_WAREHOUSE()
+    QUERY_WAREHOUSE = $streamlit_warehouse
     TITLE = 'Cortex Cost Calculator'
     COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2025-12-25';
 
