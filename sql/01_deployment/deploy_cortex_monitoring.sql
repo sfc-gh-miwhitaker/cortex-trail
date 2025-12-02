@@ -56,8 +56,8 @@
  * CLEANUP:
  *   See sql/99_cleanup/cleanup_all.sql
  * 
- * VERSION: 2.9 (ASCII-only, standards-compliant)
- * LAST UPDATED: 2025-11-21
+ * VERSION: 3.0 (Updated Dec 2025 - model pricing refresh)
+ * LAST UPDATED: 2025-12-02
  ******************************************************************************/
 
 -- ===========================================================================

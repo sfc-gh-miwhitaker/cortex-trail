@@ -20,8 +20,8 @@
  *   4. Calculator generates credit projections
  *   5. Export summary for sales/pricing team
  * 
- * VERSION: 2.9 (Standards-compliant)
- * LAST UPDATED: 2025-11-21
+ * VERSION: 3.0 (Updated Dec 2025)
+ * LAST UPDATED: 2025-12-02
  ******************************************************************************/
 
 -- ===========================================================================

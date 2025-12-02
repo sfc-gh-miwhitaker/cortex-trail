@@ -465,7 +465,7 @@ def fetch_aisql_data():
 def show_aisql_functions(credit_cost):
     """Display AISQL Functions analysis tab (NEW in v2.5)"""
     st.header("🤖 AISQL Function & Model Analysis")
-    st.markdown("**Detailed tracking of Cortex AISQL functions and models** (v2.6: Updated pricing Oct 31, 2025)")
+    st.markdown("**Detailed tracking of Cortex AISQL functions and models** (v2.7: Updated Dec 2025 - new models, deprecation warnings)")
     
     # ========================================================================
     # Fetch AISQL data (cached for performance)
@@ -754,12 +754,14 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # ========================================================================
     # Snowflake Official Consumption Rates (Reference)
     # ========================================================================
-    with st.expander("📘 Snowflake Official Consumption Rates (Updated Oct 31, 2025)", expanded=False):
+    with st.expander("📘 Snowflake Official Consumption Rates (Updated Dec 2025)", expanded=False):
         st.markdown("""
         **Reference: Snowflake AI Features Credit Table (Table 6)**
         
         These are Snowflake's published consumption rates for Cortex services:
-        *Source: [Snowflake Service Consumption Table](https://www.snowflake.com/legal-files/CreditConsumptionTable.pdf) (Effective Oct 31, 2025)*
+        *Source: [Snowflake Service Consumption Table](https://www.snowflake.com/legal-files/CreditConsumptionTable.pdf) (Effective Dec 2025)*
+        
+        **Note:** Some models are deprecated in the 2025_05 behavior bundle. See LLM Functions tab for details.
         """)
         
         # Create tabs for different service categories
@@ -815,26 +817,30 @@ def show_cost_projections(df, credit_cost, variance_pct):
             st.markdown("**LLM Text Generation Functions (COMPLETE, CLASSIFY, etc.)**")
             st.caption("Rates shown are credits per 1 million tokens. Available via SQL functions AND REST API.")
             
+            # Current models (as of Dec 2025)
             llm_rates = pd.DataFrame([
+                # Claude models (current)
+                {'Model': 'claude-4-sonnet', 'Input': 3.0, 'Output': 15.0, 'Access': 'SQL + API', 'Notes': 'Latest Claude'},
+                {'Model': 'claude-3-7-sonnet', 'Input': 3.0, 'Output': 15.0, 'Access': 'SQL + API', 'Notes': 'High capability'},
                 {'Model': 'claude-3-5-sonnet', 'Input': 3.0, 'Output': 15.0, 'Access': 'SQL + API', 'Notes': 'High capability'},
                 {'Model': 'claude-3-5-haiku', 'Input': 1.0, 'Output': 5.0, 'Access': 'SQL + API', 'Notes': 'Fast & efficient'},
                 {'Model': 'claude-3-opus', 'Input': 15.0, 'Output': 75.0, 'Access': 'SQL + API', 'Notes': 'Most capable'},
                 {'Model': 'claude-3-sonnet', 'Input': 3.0, 'Output': 15.0, 'Access': 'SQL + API', 'Notes': 'Balanced'},
                 {'Model': 'claude-3-haiku', 'Input': 0.25, 'Output': 1.25, 'Access': 'SQL + API', 'Notes': 'Fastest'},
+                # Llama models (current)
+                {'Model': 'snowflake-llama-3.3-70b', 'Input': 0.4, 'Output': 0.4, 'Access': 'SQL + API', 'Notes': 'Snowflake optimized'},
                 {'Model': 'llama3.1-405b', 'Input': 3.0, 'Output': 3.0, 'Access': 'SQL + API', 'Notes': 'Large model'},
                 {'Model': 'llama3.1-70b', 'Input': 0.4, 'Output': 0.4, 'Access': 'SQL + API', 'Notes': 'Good balance'},
                 {'Model': 'llama3.1-8b', 'Input': 0.1, 'Output': 0.1, 'Access': 'SQL + API', 'Notes': 'Efficient'},
                 {'Model': 'llama3-70b', 'Input': 0.4, 'Output': 0.4, 'Access': 'SQL + API', 'Notes': 'Previous gen'},
                 {'Model': 'llama3-8b', 'Input': 0.1, 'Output': 0.1, 'Access': 'SQL + API', 'Notes': 'Previous gen'},
+                # DeepSeek (new)
+                {'Model': 'deepseek-r1', 'Input': 0.55, 'Output': 2.19, 'Access': 'SQL + API', 'Notes': 'Cross-region'},
+                # Mistral models (current)
                 {'Model': 'mistral-large2', 'Input': 2.0, 'Output': 6.0, 'Access': 'SQL + API', 'Notes': 'Latest large'},
                 {'Model': 'mistral-large', 'Input': 2.0, 'Output': 6.0, 'Access': 'SQL + API', 'Notes': 'Large model'},
                 {'Model': 'mixtral-8x7b', 'Input': 0.15, 'Output': 0.15, 'Access': 'SQL + API', 'Notes': 'MoE model'},
                 {'Model': 'mistral-7b', 'Input': 0.1, 'Output': 0.1, 'Access': 'SQL + API', 'Notes': 'Base model'},
-                {'Model': 'jamba-1.5-large', 'Input': 2.0, 'Output': 8.0, 'Access': 'SQL + API', 'Notes': 'Hybrid SSM'},
-                {'Model': 'jamba-1.5-mini', 'Input': 0.2, 'Output': 0.4, 'Access': 'SQL + API', 'Notes': 'Efficient'},
-                {'Model': 'gemma-7b', 'Input': 0.1, 'Output': 0.1, 'Access': 'SQL + API', 'Notes': 'Google model'},
-                {'Model': 'reka-core', 'Input': 3.0, 'Output': 15.0, 'Access': 'SQL + API', 'Notes': 'Multimodal'},
-                {'Model': 'reka-flash', 'Input': 0.3, 'Output': 1.5, 'Access': 'SQL + API', 'Notes': 'Fast multimodal'}
             ])
             
             st.dataframe(
@@ -846,8 +852,18 @@ def show_cost_projections(df, credit_cost, variance_pct):
                 hide_index=True
             )
             
+            # Deprecated models warning
+            st.warning("""
+            **Deprecated Models (2025_05 bundle):** The following models are being deprecated and should not be used for new projects:
+            - `gemma-7b`, `jamba-1.5-large`, `jamba-1.5-mini`, `jamba-instruct`
+            - `llama2-70b-chat`, `llama3.2-1b`, `llama3.2-3b`
+            - `reka-core`, `reka-flash`
+            
+            Migrate to newer alternatives like `snowflake-llama-3.3-70b` or `mistral-large2`.
+            """)
+            
             st.info("""
-            💡 **Important**: These models are used for functions like:
+            **Important**: These models are used for functions like:
             - `COMPLETE()` / `AI_COMPLETE()` - Text generation
             - `AI_CLASSIFY()` - Classification tasks
             - `AI_FILTER()` - Content filtering

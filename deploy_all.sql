@@ -51,8 +51,8 @@
  * CLEANUP:
  *   Run sql/99_cleanup/cleanup_all.sql for complete removal
  * 
- * VERSION: 2.9 (Standards-compliant: SFE_ prefixes, ASCII-only)
- * LAST UPDATED: 2025-11-25
+ * VERSION: 3.0 (Updated LLM model pricing, deprecation warnings)
+ * LAST UPDATED: 2025-12-02
  ******************************************************************************/
 
 -- ===========================================================================
