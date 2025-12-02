@@ -1,8 +1,9 @@
 # Network Flow - Cortex Cost Calculator
 
-**Author:** Michael Whitaker  
-**Last Updated:** 2025-11-12  
-**Status:** ⚠️ **DEMO/NON-PRODUCTION**
+**Author:** SE Community  
+**Last Updated:** 2025-12-02  
+**Expires:** 2025-12-25 (30 days from creation)  
+**Status:** Reference Implementation
 
 ---
 

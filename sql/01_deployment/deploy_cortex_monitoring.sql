@@ -838,20 +838,20 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_QUERY_COST_ANALYSIS;
 -- ===========================================================================
 -- TROUBLESHOOTING
 -- ===========================================================================
-UNION ALL SELECT ''
-UNION ALL SELECT 'If errors occur during validation:'
-UNION ALL SELECT ''
-UNION ALL SELECT '1. "Permission denied" on ACCOUNT_USAGE views'
-UNION ALL SELECT '   → Need IMPORTED PRIVILEGES on SNOWFLAKE database'
-UNION ALL SELECT '   → Run as ACCOUNTADMIN: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <your_role>;'
-UNION ALL SELECT ''
-UNION ALL SELECT '2. Views return no data'
-UNION ALL SELECT '   → Normal if account has no Cortex usage yet'
-UNION ALL SELECT '   → Views will populate after using Cortex services (Analyst, Search, Functions)'
-UNION ALL SELECT ''
-UNION ALL SELECT '3. Task not starting'
-UNION ALL SELECT '   → Verify task state: SHOW TASKS IN SCHEMA CORTEX_USAGE;'
-UNION ALL SELECT '   → If suspended: ALTER TASK TASK_DAILY_CORTEX_SNAPSHOT RESUME;';
+-- 
+-- If errors occur during validation:
+-- 
+-- 1. "Permission denied" on ACCOUNT_USAGE views
+--    -> Need IMPORTED PRIVILEGES on SNOWFLAKE database
+--    -> Run as ACCOUNTADMIN: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <your_role>;
+-- 
+-- 2. Views return no data
+--    -> Normal if account has no Cortex usage yet
+--    -> Views will populate after using Cortex services (Analyst, Search, Functions)
+-- 
+-- 3. Task not starting
+--    -> Verify task state: SHOW TASKS IN SCHEMA CORTEX_USAGE;
+--    -> If suspended: ALTER TASK TASK_DAILY_CORTEX_SNAPSHOT RESUME;
 
 -- ===========================================================================
 -- DEPLOYMENT SUMMARY

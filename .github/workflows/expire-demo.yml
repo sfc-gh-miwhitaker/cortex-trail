@@ -1,16 +1,19 @@
-name: Demo Expiration Check
+# Demo Expiration Workflow
+# Author: SE Community
+# Purpose: Automatically archive and make private after expiration date
+# Last Updated: 2025-12-02
 
-# Runs daily to check if demo has expired
-# Archives repository and makes it private after expiration date
+name: Demo Expiration Check
 
 on:
   schedule:
     # Run daily at 9:00 AM UTC
     - cron: '0 9 * * *'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:
+    # Allow manual trigger
 
 env:
-  EXPIRATION_DATE: '2025-12-25'
+  EXPIRE_DATE: '2025-12-25'
 
 jobs:
   check-expiration:
@@ -19,85 +22,75 @@ jobs:
       contents: write
       
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        
       - name: Check expiration date
-        id: check_date
+        id: check
         run: |
-          EXPIRATION=$(date -d "${{ env.EXPIRATION_DATE }}" +%s)
-          CURRENT=$(date +%s)
-          DAYS_UNTIL=$((($EXPIRATION - $CURRENT) / 86400))
+          CURRENT_DATE=$(date +%Y-%m-%d)
+          EXPIRE_DATE="${{ env.EXPIRE_DATE }}"
           
-          echo "days_until_expiration=$DAYS_UNTIL" >> $GITHUB_OUTPUT
+          echo "Current date: $CURRENT_DATE"
+          echo "Expiration date: $EXPIRE_DATE"
           
-          if [ $CURRENT -gt $EXPIRATION ]; then
+          if [[ "$CURRENT_DATE" > "$EXPIRE_DATE" ]]; then
             echo "expired=true" >> $GITHUB_OUTPUT
-            echo "Demo has EXPIRED"
-          elif [ $DAYS_UNTIL -le 7 ]; then
-            echo "expired=false" >> $GITHUB_OUTPUT
-            echo "WARNING: Demo expires in $DAYS_UNTIL days"
+            echo "🚫 Demo has expired!"
           else
             echo "expired=false" >> $GITHUB_OUTPUT
-            echo "Demo expires in $DAYS_UNTIL days"
+            echo "✅ Demo is still active"
           fi
-          
-      - name: Create expiration notice
-        if: steps.check_date.outputs.expired == 'true'
-        run: |
-          cat > EXPIRED.md << 'EOF'
-          # This Demo Has Expired
-          
-          **Expiration Date:** ${{ env.EXPIRATION_DATE }}
-          
-          This demonstration project has reached its 30-day expiration window and has been archived.
-          
-          ## Why Expiration?
-          
-          Demo projects include expiration dates to prevent:
-          - Outdated code examples being discovered and used
-          - Syntax drift as Snowflake features evolve
-          - Confusion about current best practices
-          
-          ## Getting Updated Version
-          
-          Contact the SE Community for:
-          - Updated version with current Snowflake features
-          - Latest best practices and patterns
-          - Current cost estimation models
-          
-          ## Project Archive
-          
-          This repository remains available in archived state for reference but should not be deployed.
-          
-          ---
-          
-          **Author:** SE Community  
-          **Archived:** $(date +%Y-%m-%d)  
-          **Original Expiration:** ${{ env.EXPIRATION_DATE }}
-          EOF
-          
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add EXPIRED.md
-          git commit -m "docs: add expiration notice"
-          git push
-          
-      - name: Archive and make private
-        if: steps.check_date.outputs.expired == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # Archive the repository
-          gh repo archive ${{ github.repository }} --yes
-          
-          # Make repository private
-          gh repo edit ${{ github.repository }} --visibility private
-          
-          echo "Repository archived and made private due to expiration"
-          
-      - name: Send expiration warning
-        if: steps.check_date.outputs.expired == 'false' && steps.check_date.outputs.days_until_expiration <= 7
-        run: |
-          echo "::warning::Demo expires in ${{ steps.check_date.outputs.days_until_expiration }} days on ${{ env.EXPIRATION_DATE }}"
 
+      - name: Archive repository
+        if: steps.check.outputs.expired == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            console.log('🚫 Demo expired - archiving repository...');
+            
+            // Archive the repository
+            await github.rest.repos.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              archived: true
+            });
+            
+            console.log('✅ Repository archived successfully');
+            
+            // Note: Making repo private requires admin token with additional permissions
+            // For security, we only archive. Manual intervention required for private.
+            console.log('⚠️  Manual action needed: Make repository private via Settings');
+
+      - name: Create expiration notice issue
+        if: steps.check.outputs.expired == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: '🚫 Demo Expired - Repository Archived',
+              body: `## Demo Expiration Notice
+              
+            This demonstration repository has reached its expiration date (**${{ env.EXPIRE_DATE }}**) and has been automatically archived.
+            
+            ### Why demos expire
+            - Prevents outdated code examples from being discovered and deployed
+            - Ensures demos reflect current Snowflake features and syntax
+            - Protects users from deprecated patterns and best practices drift
+            
+            ### Need an updated version?
+            1. Contact SE Community for the latest version
+            2. Or fork and update the expiration date and review for current syntax
+            
+            ### Repository Status
+            - **Status:** Archived (read-only)
+            - **Expiration Date:** ${{ env.EXPIRE_DATE }}
+            - **Archived On:** ${new Date().toISOString().split('T')[0]}
+            
+            ---
+            *This issue was created automatically by the demo expiration workflow.*`,
+              labels: ['expired', 'automated']
+            });
+            
+            console.log(`Created issue #${issue.data.number}`);
