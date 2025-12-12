@@ -237,7 +237,6 @@ SELECT
     DATE_TRUNC('day', start_time) AS usage_date,
     start_time,
     end_time,
-    warehouse_id,
     model_name,
     token_credits,
     tokens,
