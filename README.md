@@ -1,16 +1,16 @@
 ![Reference Implementation](https://img.shields.io/badge/Reference-Implementation-blue)
 ![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
-![Expires](https://img.shields.io/badge/Expires-2026--02--04-orange)
+![Expires](https://img.shields.io/badge/Expires-2026--07--05-green)
 
 # Snowflake Cortex Cost Calculator v2.9
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**  
+> **DEMONSTRATION PROJECT - EXPIRES: 2026-07-05**  
 > This demo uses Snowflake features current as of November 2025.  
 > After expiration, this repository will be archived and made private.
 
 **Author:** SE Community  
 **Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting  
-**Created:** 2025-11-25 | **Expires:** 2026-02-04 (30 days) | **Status:** ACTIVE
+**Created:** 2025-11-25 | **Expires:** 2026-07-05 (180 days) | **Status:** ACTIVE
 
 ---
 

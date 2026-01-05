@@ -1,0 +1,309 @@
+/*******************************************************************************
+ * DEMO PROJECT: Cortex Cost Calculator - Data Quality Tests
+ * 
+ * AUTHOR: SE Community
+ * CREATED: 2025-01-05
+ * EXPIRES: 2026-07-05 (180 days)
+ * 
+ * PURPOSE:
+ *   Comprehensive data quality validation for Cortex usage data.
+ *   Identifies data anomalies, missing data, and quality issues.
+ * 
+ * TEST CATEGORIES:
+ *   1. Completeness - Missing dates, gaps in data
+ *   2. Accuracy - Calculation errors, inconsistencies
+ *   3. Validity - Value ranges, data types
+ *   4. Consistency - Cross-view data matching
+ * 
+ * VERSION: 1.0
+ * LAST UPDATED: 2025-01-05
+ ******************************************************************************/
+
+USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+
+-- ===========================================================================
+-- DATA QUALITY REPORT
+-- ===========================================================================
+
+SELECT '═══════════════════ DATA QUALITY REPORT ═══════════════════' AS header;
+
+-- ===========================================================================
+-- 1. COMPLETENESS CHECKS
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- COMPLETENESS CHECKS ---' AS section;
+
+-- Check 1: Date gaps in daily summary
+WITH date_series AS (
+    SELECT DATEADD('day', SEQ4(), DATEADD('day', -30, CURRENT_DATE())) AS expected_date
+    FROM TABLE(GENERATOR(ROWCOUNT => 31))
+),
+actual_dates AS (
+    SELECT DISTINCT date FROM V_CORTEX_DAILY_SUMMARY
+    WHERE date >= DATEADD('day', -30, CURRENT_DATE())
+)
+SELECT
+    'Missing Dates' AS check_name,
+    COUNT(*) AS missing_count,
+    LISTAGG(expected_date::VARCHAR, ', ') AS missing_dates
+FROM date_series d
+LEFT JOIN actual_dates a ON d.expected_date = a.date
+WHERE a.date IS NULL;
+
+-- Check 2: Services with no recent data
+SELECT
+    'Services with No Recent Data' AS check_name,
+    service_type,
+    MAX(date) AS last_data_date,
+    DATEDIFF('day', MAX(date), CURRENT_DATE()) AS days_since_last_data
+FROM V_CORTEX_DAILY_SUMMARY
+GROUP BY service_type
+HAVING days_since_last_data > 7
+ORDER BY days_since_last_data DESC;
+
+-- Check 3: NULL value counts by column
+SELECT
+    'NULL Values by Column' AS check_name,
+    SUM(CASE WHEN service_type IS NULL THEN 1 ELSE 0 END) AS null_service_type,
+    SUM(CASE WHEN total_credits IS NULL THEN 1 ELSE 0 END) AS null_total_credits,
+    SUM(CASE WHEN daily_unique_users IS NULL THEN 1 ELSE 0 END) AS null_daily_users,
+    SUM(CASE WHEN total_operations IS NULL THEN 1 ELSE 0 END) AS null_operations
+FROM V_CORTEX_DAILY_SUMMARY;
+
+-- ===========================================================================
+-- 2. ACCURACY CHECKS
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- ACCURACY CHECKS ---' AS section;
+
+-- Check 4: Calculation accuracy - credits_per_user
+SELECT
+    'Incorrect credits_per_user Calculations' AS check_name,
+    COUNT(*) AS error_count,
+    SUM(total_credits) AS total_credits_affected
+FROM V_CORTEX_DAILY_SUMMARY
+WHERE daily_unique_users > 0
+  AND ABS(credits_per_user - (total_credits / daily_unique_users)) > 0.01;
+
+-- Check 5: Credits sum consistency across views
+WITH summary_totals AS (
+    SELECT SUM(total_credits) AS summary_credits
+    FROM V_CORTEX_DAILY_SUMMARY
+    WHERE date >= DATEADD('day', -30, CURRENT_DATE())
+),
+export_totals AS (
+    SELECT SUM(total_credits) AS export_credits
+    FROM V_CORTEX_COST_EXPORT
+    WHERE date >= DATEADD('day', -30, CURRENT_DATE())
+)
+SELECT
+    'Credits Sum Consistency' AS check_name,
+    s.summary_credits,
+    e.export_credits,
+    ABS(s.summary_credits - e.export_credits) AS difference,
+    CASE 
+        WHEN ABS(s.summary_credits - e.export_credits) < 0.01 THEN '✅ PASS'
+        ELSE '❌ FAIL - Views out of sync'
+    END AS status
+FROM summary_totals s, export_totals e;
+
+-- ===========================================================================
+-- 3. VALIDITY CHECKS
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- VALIDITY CHECKS ---' AS section;
+
+-- Check 6: Value ranges
+SELECT
+    'Value Range Validation' AS check_name,
+    SUM(CASE WHEN total_credits < 0 THEN 1 ELSE 0 END) AS negative_credits,
+    SUM(CASE WHEN total_credits > 10000 THEN 1 ELSE 0 END) AS extremely_high_credits,
+    SUM(CASE WHEN daily_unique_users < 0 THEN 1 ELSE 0 END) AS negative_users,
+    SUM(CASE WHEN daily_unique_users > 10000 THEN 1 ELSE 0 END) AS extremely_high_users,
+    SUM(CASE WHEN total_operations < 0 THEN 1 ELSE 0 END) AS negative_operations
+FROM V_CORTEX_DAILY_SUMMARY;
+
+-- Check 7: Date validity
+SELECT
+    'Date Validity' AS check_name,
+    SUM(CASE WHEN date > CURRENT_DATE() THEN 1 ELSE 0 END) AS future_dates,
+    SUM(CASE WHEN date < '2020-01-01' THEN 1 ELSE 0 END) AS dates_too_old,
+    MIN(date) AS earliest_date,
+    MAX(date) AS latest_date
+FROM V_CORTEX_DAILY_SUMMARY;
+
+-- Check 8: Service type validity
+SELECT
+    'Unknown Service Types' AS check_name,
+    service_type,
+    COUNT(*) AS occurrence_count
+FROM V_CORTEX_DAILY_SUMMARY
+WHERE service_type NOT IN (
+    'Cortex Analyst',
+    'Cortex Search',
+    'Cortex Search Serving',
+    'Cortex Functions',
+    'Document AI',
+    'Cortex Fine-tuning'
+)
+GROUP BY service_type;
+
+-- ===========================================================================
+-- 4. CONSISTENCY CHECKS
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- CONSISTENCY CHECKS ---' AS section;
+
+-- Check 9: Duplicate detection
+SELECT
+    'Duplicate Date-Service Records' AS check_name,
+    date,
+    service_type,
+    COUNT(*) AS duplicate_count
+FROM V_CORTEX_DAILY_SUMMARY
+GROUP BY date, service_type
+HAVING COUNT(*) > 1
+ORDER BY duplicate_count DESC;
+
+-- Check 10: Anomaly detection consistency
+SELECT
+    'Anomalies with Invalid Data' AS check_name,
+    COUNT(*) AS invalid_anomalies
+FROM V_COST_ANOMALIES
+WHERE (credits_7d_ago IS NULL AND alert_level != 'INSUFFICIENT_DATA')
+   OR (wow_growth_pct IS NOT NULL AND alert_level = 'INSUFFICIENT_DATA');
+
+-- ===========================================================================
+-- 5. CONFIGURATION VALIDATION
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- CONFIGURATION VALIDATION ---' AS section;
+
+-- Check 11: Required configuration settings
+WITH required_settings AS (
+    SELECT column1 AS required_setting
+    FROM VALUES 
+        ('LOOKBACK_DAYS'),
+        ('CREDIT_COST_USD'),
+        ('SNAPSHOT_SCHEDULE'),
+        ('ANOMALY_THRESHOLD_HIGH')
+)
+SELECT
+    'Missing Configuration Settings' AS check_name,
+    r.required_setting,
+    CASE WHEN c.setting_name IS NULL THEN '❌ MISSING' ELSE '✅ EXISTS' END AS status
+FROM required_settings r
+LEFT JOIN CORTEX_USAGE_CONFIG c ON r.required_setting = c.setting_name;
+
+-- Check 12: Configuration data type validation
+SELECT
+    'Invalid Configuration Values' AS check_name,
+    setting_name,
+    setting_value,
+    data_type,
+    'Value does not match declared data type' AS issue
+FROM CORTEX_USAGE_CONFIG
+WHERE 
+    (data_type = 'INTEGER' AND NOT REGEXP_LIKE(setting_value, '^[0-9]+$'))
+    OR (data_type = 'DECIMAL' AND NOT REGEXP_LIKE(setting_value, '^[0-9]+\\.?[0-9]*$'))
+    OR (data_type = 'BOOLEAN' AND setting_value NOT IN ('TRUE', 'FALSE'));
+
+-- ===========================================================================
+-- DATA QUALITY SCORE
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '═══════════════════ DATA QUALITY SCORE ═══════════════════' AS header;
+
+WITH quality_metrics AS (
+    SELECT
+        -- Completeness score (0-100)
+        CASE 
+            WHEN (SELECT COUNT(DISTINCT date) FROM V_CORTEX_DAILY_SUMMARY WHERE date >= DATEADD('day', -30, CURRENT_DATE())) >= 25
+            THEN 100
+            ELSE (SELECT COUNT(DISTINCT date) * 100.0 / 30 FROM V_CORTEX_DAILY_SUMMARY WHERE date >= DATEADD('day', -30, CURRENT_DATE()))
+        END AS completeness_score,
+        
+        -- Accuracy score (0-100)
+        100 - (
+            SELECT COUNT(*) * 10 FROM V_CORTEX_DAILY_SUMMARY
+            WHERE daily_unique_users > 0
+              AND ABS(credits_per_user - (total_credits / daily_unique_users)) > 0.01
+        ) AS accuracy_score,
+        
+        -- Validity score (0-100)
+        100 - (
+            SELECT (
+                SUM(CASE WHEN total_credits < 0 THEN 1 ELSE 0 END) +
+                SUM(CASE WHEN daily_unique_users < 0 THEN 1 ELSE 0 END)
+            ) * 5
+            FROM V_CORTEX_DAILY_SUMMARY
+        ) AS validity_score,
+        
+        -- Consistency score (0-100)
+        CASE 
+            WHEN (SELECT COUNT(*) FROM (
+                SELECT date, service_type, COUNT(*) AS cnt
+                FROM V_CORTEX_DAILY_SUMMARY
+                GROUP BY date, service_type
+                HAVING cnt > 1
+            )) = 0
+            THEN 100
+            ELSE 50
+        END AS consistency_score
+)
+SELECT
+    completeness_score,
+    accuracy_score,
+    validity_score,
+    consistency_score,
+    ROUND((completeness_score + accuracy_score + validity_score + consistency_score) / 4, 2) AS overall_quality_score,
+    CASE
+        WHEN ((completeness_score + accuracy_score + validity_score + consistency_score) / 4) >= 90 THEN '✅ EXCELLENT'
+        WHEN ((completeness_score + accuracy_score + validity_score + consistency_score) / 4) >= 75 THEN '✅ GOOD'
+        WHEN ((completeness_score + accuracy_score + validity_score + consistency_score) / 4) >= 60 THEN '⚠️ FAIR'
+        ELSE '❌ POOR'
+    END AS quality_rating
+FROM quality_metrics;
+
+-- ===========================================================================
+-- RECOMMENDATIONS
+-- ===========================================================================
+
+SELECT '' AS separator;
+SELECT '--- RECOMMENDATIONS ---' AS section;
+
+WITH issues AS (
+    SELECT COUNT(*) AS missing_dates FROM (
+        WITH date_series AS (
+            SELECT DATEADD('day', SEQ4(), DATEADD('day', -30, CURRENT_DATE())) AS expected_date
+            FROM TABLE(GENERATOR(ROWCOUNT => 31))
+        ),
+        actual_dates AS (
+            SELECT DISTINCT date FROM V_CORTEX_DAILY_SUMMARY WHERE date >= DATEADD('day', -30, CURRENT_DATE())
+        )
+        SELECT d.expected_date FROM date_series d
+        LEFT JOIN actual_dates a ON d.expected_date = a.date
+        WHERE a.date IS NULL
+    ),
+    (SELECT COUNT(*) AS calc_errors FROM V_CORTEX_DAILY_SUMMARY
+     WHERE daily_unique_users > 0 AND ABS(credits_per_user - (total_credits / daily_unique_users)) > 0.01) AS errors,
+    (SELECT COUNT(*) AS negative_values FROM V_CORTEX_DAILY_SUMMARY WHERE total_credits < 0) AS negatives
+)
+SELECT
+    CASE
+        WHEN missing_dates > 5 THEN '⚠️ Investigate missing dates - possible data pipeline issue'
+        WHEN calc_errors > 0 THEN '⚠️ Fix calculation errors in views'
+        WHEN negative_values > 0 THEN '⚠️ Investigate negative credit values'
+        ELSE '✅ No critical issues detected'
+    END AS recommendation
+FROM issues;
+
+/*******************************************************************************
+ * END OF DATA QUALITY REPORT
+ ******************************************************************************/

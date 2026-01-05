@@ -3,9 +3,9 @@
  * 
  * AUTHOR: SE Community
  * CREATED: 2025-11-25
- * EXPIRES: 2026-02-04 (30 days)
+ * EXPIRES: 2026-07-05 (180 days)
  * 
- * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2026-02-04
+ * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2026-07-05
  * ⚠️  NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
  * 
  * PURPOSE:
@@ -76,7 +76,7 @@ CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
     COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.CORTEX_USAGE
-    COMMENT = 'DEMO: Cortex service usage monitoring and cost tracking (v2.9) | EXPIRES: 2026-02-04';
+    COMMENT = 'DEMO: Cortex service usage monitoring and cost tracking (v2.9) | EXPIRES: 2026-07-05';
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
@@ -822,7 +822,7 @@ ORDER BY date DESC, total_credits DESC;
 
 -- View 17: User Spend Attribution (daily grain, per feature/model)
 CREATE OR REPLACE VIEW V_USER_SPEND_ATTRIBUTION
-    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-07-05'
 AS
 WITH analyst AS (
     SELECT
@@ -886,7 +886,7 @@ FROM (
 
 -- View 18: User Spend Summary (top users, overall + service mix)
 CREATE OR REPLACE VIEW V_USER_SPEND_SUMMARY
-    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-07-05'
 AS
 SELECT
     user_name,
@@ -904,7 +904,7 @@ ORDER BY total_credits_used DESC;
 
 -- View 19: User Feature Usage (user x service x feature x model)
 CREATE OR REPLACE VIEW V_USER_FEATURE_USAGE
-    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-07-05'
 AS
 SELECT
     user_name,
@@ -931,7 +931,7 @@ ORDER BY total_credits_used DESC;
 
 -- View 20: Forecast Training Input (daily credits per service)
 CREATE OR REPLACE VIEW V_FORECAST_INPUT
-    COMMENT = 'DEMO: cortex-trail - Forecast training input for daily credits by service | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Forecast training input for daily credits by service | EXPIRES: 2026-07-05'
 AS
 SELECT
     service_type,
@@ -950,12 +950,12 @@ BEGIN
             TIMESTAMP_COLNAME => 'TS',
             TARGET_COLNAME => 'Y'
         )
-        COMMENT = 'DEMO: cortex-trail - Forecast model for daily credits by service | EXPIRES: 2026-02-04'
+        COMMENT = 'DEMO: cortex-trail - Forecast model for daily credits by service | EXPIRES: 2026-07-05'
     $$;
 
     EXECUTE IMMEDIATE $$
         CREATE OR REPLACE VIEW V_USAGE_FORECAST_12M
-            COMMENT = 'DEMO: cortex-trail - 12-month daily forecast (ML.FORECAST) for credits by service | EXPIRES: 2026-02-04'
+            COMMENT = 'DEMO: cortex-trail - 12-month daily forecast (ML.FORECAST) for credits by service | EXPIRES: 2026-07-05'
         AS
         SELECT
             SERIES::VARCHAR AS service_type,
@@ -970,7 +970,7 @@ EXCEPTION
         -- Fallback: deploy an empty view so the rest of the demo still works.
         EXECUTE IMMEDIATE $$
             CREATE OR REPLACE VIEW V_USAGE_FORECAST_12M
-                COMMENT = 'DEMO: cortex-trail - 12-month daily forecast view placeholder (model unavailable) | EXPIRES: 2026-02-04'
+                COMMENT = 'DEMO: cortex-trail - 12-month daily forecast view placeholder (model unavailable) | EXPIRES: 2026-07-05'
             AS
             SELECT
                 CAST(NULL AS VARCHAR) AS service_type,

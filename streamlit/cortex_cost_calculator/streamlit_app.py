@@ -44,9 +44,20 @@ def fetch_data_from_views(lookback_days=30):
     try:
         df = session.sql(snapshot_query).to_pandas()
         if not df.empty:
+            st.success(f"✅ Loaded {len(df)} rows from snapshot table (optimized for speed)")
             return df
-    except:
-        pass
+        else:
+            st.info("ℹ️ Snapshot table is empty. Falling back to live views...")
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "does not exist" in error_msg or "invalid identifier" in error_msg:
+            st.warning("⚠️ Snapshot table not found. Using live views (may be slower). Run task manually to create snapshots: `EXECUTE TASK TASK_DAILY_CORTEX_SNAPSHOT`")
+        elif "insufficient privileges" in error_msg or "access denied" in error_msg:
+            st.error(f"❌ Permission denied accessing snapshot table. Please ensure you have SELECT privileges on SNOWFLAKE_EXAMPLE.CORTEX_USAGE schema.")
+            st.info("**Troubleshooting:** Run `GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE TO ROLE <YOUR_ROLE>;`")
+            return pd.DataFrame()
+        else:
+            st.warning(f"⚠️ Error accessing snapshot table: {str(e)[:100]}. Falling back to live views...")
     
     # Fallback to live view if snapshot is empty or doesn't exist
     live_query = f"""
@@ -67,7 +78,39 @@ def fetch_data_from_views(lookback_days=30):
     WHERE date >= DATEADD('day', -{lookback_days}, CURRENT_DATE())
     ORDER BY date DESC
     """
-    return session.sql(live_query).to_pandas()
+    
+    try:
+        df = session.sql(live_query).to_pandas()
+        if df.empty:
+            st.warning("⚠️ No data found in the specified lookback period. This may be because:")
+            st.info("""
+            - No Cortex usage in the last {lookback_days} days
+            - ACCOUNT_USAGE data is still being populated (wait 3 hours after usage)
+            - Insufficient privileges on SNOWFLAKE.ACCOUNT_USAGE views
+            
+            **To verify access:** Run `SELECT COUNT(*) FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE SERVICE_TYPE = 'AI_SERVICES'`
+            """)
+        else:
+            st.info(f"ℹ️ Loaded {len(df)} rows from live views")
+        return df
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "insufficient privileges" in error_msg or "access denied" in error_msg:
+            st.error("❌ Permission denied accessing monitoring views.")
+            st.info("""
+            **Required privileges:**
+            1. `GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;`
+            2. `GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE TO ROLE <YOUR_ROLE>;`
+            
+            **Or switch to ACCOUNTADMIN:** `USE ROLE ACCOUNTADMIN;`
+            """)
+        elif "does not exist" in error_msg:
+            st.error("❌ Monitoring views not found. Please deploy monitoring infrastructure first.")
+            st.info("**Deploy views:** Run `sql/01_deployment/deploy_cortex_monitoring.sql`")
+        else:
+            st.error(f"❌ Error fetching data: {str(e)}")
+            st.info("**Check:** Warehouse is running, views exist, and you have proper permissions")
+        return pd.DataFrame()
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def fetch_user_spend_attribution(lookback_days=30):
@@ -86,7 +129,18 @@ def fetch_user_spend_attribution(lookback_days=30):
     WHERE usage_date >= DATEADD('day', -{lookback_days}, CURRENT_DATE())
     ORDER BY usage_date DESC, credits_used DESC
     """
-    return session.sql(query).to_pandas()
+    try:
+        df = session.sql(query).to_pandas()
+        if df.empty:
+            st.info("ℹ️ No user attribution data found. This view requires query-level tracking.")
+        return df
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "does not exist" in error_msg:
+            st.warning("⚠️ User attribution view not found. Deploy latest monitoring views.")
+        else:
+            st.error(f"❌ Error fetching user attribution: {str(e)[:100]}")
+        return pd.DataFrame()
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def fetch_ml_forecast_12m():
@@ -101,7 +155,19 @@ def fetch_ml_forecast_12m():
     FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_USAGE_FORECAST_12M
     ORDER BY forecast_date
     """
-    return session.sql(query).to_pandas()
+    try:
+        df = session.sql(query).to_pandas()
+        if df.empty:
+            st.info("ℹ️ ML forecast model not available. Using manual projection methods instead.")
+            st.caption("**To enable ML forecasting:** Ensure you have privileges to create SNOWFLAKE.ML.FORECAST models")
+        return df
+    except Exception as e:
+        error_msg = str(e).lower()
+        if "does not exist" in error_msg:
+            st.info("ℹ️ Forecast view not found. Using manual projections.")
+        else:
+            st.warning(f"⚠️ ML forecast unavailable: {str(e)[:100]}")
+        return pd.DataFrame()
 
 def calculate_30day_totals(df):
     """Calculate rolling 30-day totals for cost estimation"""
@@ -179,18 +245,84 @@ def load_data_from_csv(uploaded_file):
         missing_cols = [col for col in required_cols if col not in df.columns]
         
         if missing_cols:
-            st.error(f"CSV missing required columns: {', '.join(missing_cols)}")
+            st.error(f"❌ CSV missing required columns: {', '.join(missing_cols)}")
+            st.info(f"**Expected columns:** {', '.join(required_cols)}")
+            st.info("**Source query:** Use `sql/02_utilities/export_metrics.sql` to generate the correct CSV format")
             return None
         
         # Standardize column names (handle case variations)
         df.columns = df.columns.str.upper()
         
-        # Convert date column
-        df['DATE'] = pd.to_datetime(df['DATE'])
+        # Validate row count
+        if len(df) == 0:
+            st.error("❌ CSV file is empty. No data rows found.")
+            return None
+        
+        if len(df) > 100000:
+            st.warning(f"⚠️ Large file detected ({len(df):,} rows). Processing may be slow. Consider filtering date range.")
+        
+        # Convert and validate date column
+        try:
+            df['DATE'] = pd.to_datetime(df['DATE'])
+        except Exception as date_err:
+            st.error(f"❌ Invalid date format in DATE column: {str(date_err)}")
+            st.info("**Expected format:** YYYY-MM-DD (e.g., 2025-01-05)")
+            return None
+        
+        # Validate date range
+        min_date = df['DATE'].min()
+        max_date = df['DATE'].max()
+        date_range_days = (max_date - min_date).days
+        
+        if date_range_days < 0:
+            st.error("❌ Invalid date range: end date is before start date")
+            return None
+        
+        if date_range_days > 730:  # 2 years
+            st.warning(f"⚠️ Date range spans {date_range_days} days (> 2 years). This may impact performance.")
+        
+        # Validate TOTAL_CREDITS column
+        if not pd.api.types.is_numeric_dtype(df['TOTAL_CREDITS']):
+            st.error("❌ TOTAL_CREDITS column must contain numeric values")
+            return None
+        
+        # Check for negative credits
+        negative_credits = df[df['TOTAL_CREDITS'] < 0]
+        if len(negative_credits) > 0:
+            st.error(f"❌ Found {len(negative_credits)} rows with negative credits. Credits must be >= 0")
+            st.dataframe(negative_credits.head())
+            return None
+        
+        # Check for null credits
+        null_credits = df[df['TOTAL_CREDITS'].isna()]
+        if len(null_credits) > 0:
+            st.warning(f"⚠️ Found {len(null_credits)} rows with NULL credits. These will be excluded from calculations.")
+            df = df[df['TOTAL_CREDITS'].notna()]
+        
+        # Validate SERVICE_TYPE values
+        known_services = [
+            'Cortex Analyst', 'Cortex Search', 'Cortex Search Serving',
+            'Cortex Functions', 'Document AI', 'Cortex Fine-tuning'
+        ]
+        unknown_services = set(df['SERVICE_TYPE'].unique()) - set(known_services)
+        if unknown_services:
+            st.info(f"ℹ️ Found unknown service types: {', '.join(unknown_services)}. These will be included in analysis.")
+        
+        # Success message
+        st.success(f"✅ CSV loaded successfully: {len(df):,} rows from {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')} ({date_range_days} days)")
         
         return df
+        
+    except pd.errors.EmptyDataError:
+        st.error("❌ CSV file is empty or corrupted")
+        return None
+    except pd.errors.ParserError as parse_err:
+        st.error(f"❌ CSV parsing error: {str(parse_err)}")
+        st.info("**Check:** Ensure file is valid CSV format with proper delimiters")
+        return None
     except Exception as e:
-        st.error(f"Error loading CSV: {str(e)}")
+        st.error(f"❌ Error loading CSV: {str(e)}")
+        st.info("**Troubleshooting:** Verify file format matches export query output")
         return None
 
 def create_credit_summary(df, credit_cost=3.00):
@@ -220,6 +352,20 @@ def main():
     with st.sidebar:
         st.header("Configuration")
         
+        # Cache management section
+        st.markdown("### 📊 Data Freshness")
+        if st.button("🔄 Refresh Data", help="Clear cache and reload data from source"):
+            st.cache_data.clear()
+            st.success("✅ Cache cleared! Data will be refreshed on next load.")
+            st.rerun()
+        
+        # Show last updated time
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.caption(f"**Last Refreshed:** {current_time}")
+        st.caption("**Cache TTL:** 5 minutes (automatic refresh)")
+        
+        st.divider()
+        
         # Data source selection
         data_source = st.radio(
             "Data Source",
@@ -235,6 +381,7 @@ def main():
                 value=30,
                 help="Number of days of historical data to analyze"
             )
+            st.caption("ℹ️ Data is cached for 5 minutes to improve performance. Use 'Refresh Data' to force reload.")
         else:
             st.markdown("### 📁 Upload Customer Data")
             uploaded_file = st.file_uploader(
@@ -242,6 +389,8 @@ def main():
                 type=['csv'],
                 help="CSV file exported from customer's Snowflake account"
             )
+        
+        st.divider()
         
         credit_cost = st.number_input(
             "Cost per Credit (USD)",

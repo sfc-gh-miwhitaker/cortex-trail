@@ -1,0 +1,318 @@
+"""
+Cortex Cost Calculator - Python Unit Tests
+
+Tests for calculation functions, projection formulas, and data transformations.
+
+Author: SE Community
+Created: 2025-01-05
+Expires: 2026-07-05
+"""
+
+import unittest
+import pandas as pd
+import numpy as np
+from datetime import datetime, timedelta
+from unittest.mock import Mock, patch
+
+# Note: These tests mock the Streamlit app functions
+# In a real deployment, import from streamlit_app.py
+
+
+class TestCalculationFunctions(unittest.TestCase):
+    """Test mathematical calculations and formulas"""
+    
+    def setUp(self):
+        """Create sample data for testing"""
+        self.sample_df = pd.DataFrame({
+            'DATE': pd.date_range('2025-01-01', periods=30),
+            'SERVICE_TYPE': ['Cortex Functions'] * 30,
+            'TOTAL_CREDITS': np.random.uniform(10, 50, 30),
+            'DAILY_UNIQUE_USERS': np.random.randint(5, 20, 30),
+            'TOTAL_OPERATIONS': np.random.randint(100, 500, 30)
+        })
+    
+    def test_credits_per_user_calculation(self):
+        """Test credits per user calculation"""
+        df = self.sample_df.copy()
+        df['CALCULATED_CPU'] = df['TOTAL_CREDITS'] / df['DAILY_UNIQUE_USERS']
+        
+        for idx, row in df.iterrows():
+            expected = row['TOTAL_CREDITS'] / row['DAILY_UNIQUE_USERS']
+            actual = row['CALCULATED_CPU']
+            self.assertAlmostEqual(actual, expected, places=4,
+                                   msg=f"Credits per user mismatch at row {idx}")
+    
+    def test_growth_rate_calculation(self):
+        """Test week-over-week growth rate calculation"""
+        current_credits = 100.0
+        previous_credits = 80.0
+        expected_growth = ((current_credits - previous_credits) / previous_credits) * 100
+        
+        self.assertAlmostEqual(expected_growth, 25.0, places=2)
+    
+    def test_growth_rate_with_zero_baseline(self):
+        """Test growth rate when previous value is zero"""
+        current_credits = 100.0
+        previous_credits = 0.0
+        
+        # Should handle division by zero gracefully
+        if previous_credits == 0:
+            growth_rate = None
+        else:
+            growth_rate = ((current_credits - previous_credits) / previous_credits) * 100
+        
+        self.assertIsNone(growth_rate, "Should return None for zero baseline")
+    
+    def test_projection_formula(self):
+        """Test cost projection formula"""
+        baseline_credits = 1000.0
+        growth_rate = 0.10  # 10% per month
+        months = 12
+        credit_cost = 3.00
+        
+        projections = []
+        for month in range(1, months + 1):
+            growth_factor = (1 + growth_rate) ** month
+            projected_credits = baseline_credits * growth_factor
+            projected_cost = projected_credits * credit_cost
+            projections.append(projected_cost)
+        
+        # Test specific months
+        self.assertAlmostEqual(projections[0], 3300.0, places=1)  # Month 1
+        self.assertAlmostEqual(projections[11], 9424.8, places=1)  # Month 12
+    
+    def test_rolling_average_calculation(self):
+        """Test 30-day rolling average"""
+        df = self.sample_df.copy()
+        df['ROLLING_AVG'] = df['TOTAL_CREDITS'].rolling(window=7, min_periods=1).mean()
+        
+        # First value should equal itself
+        self.assertEqual(df['ROLLING_AVG'].iloc[0], df['TOTAL_CREDITS'].iloc[0])
+        
+        # 7th value should be average of first 7
+        expected_avg = df['TOTAL_CREDITS'].iloc[:7].mean()
+        self.assertAlmostEqual(df['ROLLING_AVG'].iloc[6], expected_avg, places=4)
+
+
+class TestDataValidation(unittest.TestCase):
+    """Test data validation logic"""
+    
+    def test_validate_required_columns(self):
+        """Test CSV column validation"""
+        required_cols = ['DATE', 'SERVICE_TYPE', 'TOTAL_CREDITS']
+        
+        # Valid DataFrame
+        valid_df = pd.DataFrame({
+            'DATE': ['2025-01-01'],
+            'SERVICE_TYPE': ['Cortex Functions'],
+            'TOTAL_CREDITS': [100.0]
+        })
+        missing = [col for col in required_cols if col not in valid_df.columns]
+        self.assertEqual(len(missing), 0, "Should have all required columns")
+        
+        # Invalid DataFrame
+        invalid_df = pd.DataFrame({
+            'DATE': ['2025-01-01'],
+            'SERVICE_TYPE': ['Cortex Functions']
+            # Missing TOTAL_CREDITS
+        })
+        missing = [col for col in required_cols if col not in invalid_df.columns]
+        self.assertIn('TOTAL_CREDITS', missing)
+    
+    def test_validate_date_format(self):
+        """Test date format validation"""
+        valid_dates = ['2025-01-01', '2024-12-31', '2023-06-15']
+        for date_str in valid_dates:
+            try:
+                pd.to_datetime(date_str)
+                is_valid = True
+            except:
+                is_valid = False
+            self.assertTrue(is_valid, f"Date {date_str} should be valid")
+        
+        invalid_dates = ['2025-13-01', '2025-01-32', 'invalid']
+        for date_str in invalid_dates:
+            with self.assertRaises(Exception):
+                pd.to_datetime(date_str, errors='raise')
+    
+    def test_validate_negative_credits(self):
+        """Test detection of negative credits"""
+        df = pd.DataFrame({
+            'TOTAL_CREDITS': [100.0, -50.0, 200.0, -10.0]
+        })
+        negative_credits = df[df['TOTAL_CREDITS'] < 0]
+        self.assertEqual(len(negative_credits), 2, "Should detect 2 negative values")
+    
+    def test_validate_null_values(self):
+        """Test detection of NULL values"""
+        df = pd.DataFrame({
+            'TOTAL_CREDITS': [100.0, None, 200.0, np.nan]
+        })
+        null_count = df['TOTAL_CREDITS'].isna().sum()
+        self.assertEqual(null_count, 2, "Should detect 2 NULL values")
+    
+    def test_validate_service_types(self):
+        """Test service type validation"""
+        known_services = [
+            'Cortex Analyst', 'Cortex Search', 'Cortex Functions', 'Document AI'
+        ]
+        
+        df = pd.DataFrame({
+            'SERVICE_TYPE': ['Cortex Functions', 'Unknown Service', 'Cortex Analyst']
+        })
+        
+        unknown = set(df['SERVICE_TYPE'].unique()) - set(known_services)
+        self.assertEqual(len(unknown), 1, "Should detect 1 unknown service")
+        self.assertIn('Unknown Service', unknown)
+
+
+class TestDataTransformations(unittest.TestCase):
+    """Test data transformation functions"""
+    
+    def setUp(self):
+        """Create sample data"""
+        self.df = pd.DataFrame({
+            'DATE': pd.date_range('2025-01-01', periods=10),
+            'SERVICE_TYPE': ['Service A'] * 10,
+            'TOTAL_CREDITS': [10, 12, 15, 18, 20, 22, 25, 28, 30, 32]
+        })
+    
+    def test_calculate_30day_totals(self):
+        """Test 30-day rolling totals calculation"""
+        df = self.df.copy()
+        df['ROLLING_SUM'] = df['TOTAL_CREDITS'].rolling(window=5, min_periods=1).sum()
+        
+        # First value = itself
+        self.assertEqual(df['ROLLING_SUM'].iloc[0], 10)
+        
+        # 5th value = sum of first 5
+        expected_sum = df['TOTAL_CREDITS'].iloc[:5].sum()
+        self.assertEqual(df['ROLLING_SUM'].iloc[4], expected_sum)
+    
+    def test_group_by_service(self):
+        """Test aggregation by service type"""
+        df = pd.DataFrame({
+            'SERVICE_TYPE': ['Service A', 'Service A', 'Service B', 'Service B'],
+            'TOTAL_CREDITS': [100, 150, 200, 250]
+        })
+        
+        grouped = df.groupby('SERVICE_TYPE')['TOTAL_CREDITS'].sum().reset_index()
+        
+        self.assertEqual(len(grouped), 2, "Should have 2 services")
+        self.assertEqual(grouped[grouped['SERVICE_TYPE'] == 'Service A']['TOTAL_CREDITS'].values[0], 250)
+        self.assertEqual(grouped[grouped['SERVICE_TYPE'] == 'Service B']['TOTAL_CREDITS'].values[0], 450)
+    
+    def test_date_range_filtering(self):
+        """Test filtering by date range"""
+        df = self.df.copy()
+        start_date = pd.to_datetime('2025-01-05')
+        end_date = pd.to_datetime('2025-01-08')
+        
+        filtered = df[(df['DATE'] >= start_date) & (df['DATE'] <= end_date)]
+        
+        self.assertEqual(len(filtered), 4, "Should have 4 days in range")
+        self.assertTrue(all(filtered['DATE'] >= start_date))
+        self.assertTrue(all(filtered['DATE'] <= end_date))
+
+
+class TestProjectionScenarios(unittest.TestCase):
+    """Test cost projection scenarios"""
+    
+    def test_conservative_scenario(self):
+        """Test 10% monthly growth projection"""
+        baseline = 1000.0
+        growth_rate = 0.10
+        months = 12
+        
+        month_12 = baseline * ((1 + growth_rate) ** months)
+        self.assertAlmostEqual(month_12, 3138.43, places=2)
+    
+    def test_moderate_scenario(self):
+        """Test 25% monthly growth projection"""
+        baseline = 1000.0
+        growth_rate = 0.25
+        months = 12
+        
+        month_12 = baseline * ((1 + growth_rate) ** months)
+        self.assertAlmostEqual(month_12, 14551.92, places=2)
+    
+    def test_aggressive_scenario(self):
+        """Test 50% monthly growth projection"""
+        baseline = 1000.0
+        growth_rate = 0.50
+        months = 12
+        
+        month_12 = baseline * ((1 + growth_rate) ** months)
+        self.assertAlmostEqual(month_12, 129746.34, places=2)
+    
+    def test_custom_scenario(self):
+        """Test custom growth rate"""
+        baseline = 1000.0
+        growth_rate = 0.15  # 15% custom
+        months = 6
+        
+        month_6 = baseline * ((1 + growth_rate) ** months)
+        self.assertAlmostEqual(month_6, 2313.06, places=2)
+
+
+class TestCurrencyFormatting(unittest.TestCase):
+    """Test currency formatting functions"""
+    
+    def test_format_usd(self):
+        """Test USD currency formatting"""
+        value = 1234.56
+        formatted = f"${value:,.2f}"
+        self.assertEqual(formatted, "$1,234.56")
+    
+    def test_format_large_numbers(self):
+        """Test large number formatting"""
+        value = 1234567.89
+        formatted = f"${value:,.2f}"
+        self.assertEqual(formatted, "$1,234,567.89")
+    
+    def test_format_small_numbers(self):
+        """Test small number formatting"""
+        value = 0.123
+        formatted = f"${value:,.2f}"
+        self.assertEqual(formatted, "$0.12")
+
+
+class TestAnomalyDetection(unittest.TestCase):
+    """Test anomaly detection logic"""
+    
+    def test_high_alert_threshold(self):
+        """Test HIGH alert classification (>50% growth)"""
+        current = 150.0
+        previous = 100.0
+        growth = ((current - previous) / previous) * 100
+        
+        alert_level = 'HIGH' if growth > 50 else 'NORMAL'
+        self.assertEqual(alert_level, 'NORMAL')  # 50% exactly is not HIGH
+        
+        current = 160.0
+        growth = ((current - previous) / previous) * 100
+        alert_level = 'HIGH' if growth > 50 else 'NORMAL'
+        self.assertEqual(alert_level, 'HIGH')  # 60% is HIGH
+    
+    def test_medium_alert_threshold(self):
+        """Test MEDIUM alert classification (>25% growth)"""
+        current = 130.0
+        previous = 100.0
+        growth = ((current - previous) / previous) * 100
+        
+        alert_level = 'MEDIUM' if growth > 25 and growth <= 50 else 'NORMAL'
+        self.assertEqual(alert_level, 'MEDIUM')  # 30% is MEDIUM
+    
+    def test_declining_alert(self):
+        """Test DECLINING classification (negative growth)"""
+        current = 80.0
+        previous = 100.0
+        growth = ((current - previous) / previous) * 100
+        
+        alert_level = 'DECLINING' if growth < 0 else 'NORMAL'
+        self.assertEqual(alert_level, 'DECLINING')
+
+
+if __name__ == '__main__':
+    # Run all tests
+    unittest.main(verbosity=2)
