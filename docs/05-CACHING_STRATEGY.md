@@ -1,7 +1,7 @@
 # Caching Strategy Documentation
 
-**Project:** Cortex Cost Calculator  
-**Version:** 3.0  
+**Project:** Cortex Cost Calculator
+**Version:** 3.0
 **Last Updated:** 2026-01-05
 
 ---
@@ -30,7 +30,7 @@ All data-fetching functions use Streamlit's `@st.cache_data` decorator with a 5-
 
 2. **`fetch_user_spend_attribution(lookback_days)`**
    - Fetches user-level spend attribution
-   - **TTL:** 5 minutes  
+   - **TTL:** 5 minutes
    - **Reason:** Attribution data changes infrequently
 
 3. **`fetch_ml_forecast_12m()`**
@@ -130,7 +130,7 @@ def fetch_data_from_views(lookback_days=30):
 **Solution:** Click "Refresh Data" button to force reload
 
 ### "Changes not appearing"
-**Solution:** 
+**Solution:**
 1. Check if 5 minutes have passed since last load
 2. Click "Refresh Data" to clear cache
 3. Verify underlying data changed (check ACCOUNT_USAGE latency)

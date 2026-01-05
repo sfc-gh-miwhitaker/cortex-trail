@@ -1,19 +1,15 @@
-name: Pre-commit Checks
+name: Pre-commit checks
 
 on:
   pull_request: {}
-  push:
-    branches:
-      - main
-
-permissions:
-  contents: read
+  push: {}
 
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5

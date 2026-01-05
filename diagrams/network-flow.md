@@ -1,7 +1,7 @@
 # Network Flow - Cortex Trail
 Author: SE Community
 Last Updated: 2026-01-05
-Expires: 2026-02-04 (30 days from creation)
+Expires: See deploy_all.sql (single source of truth)
 Status: Reference Implementation
 
 ![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)
@@ -70,6 +70,4 @@ graph TB
 - **ServerlessTask_TASK_DAILY_CORTEX_SNAPSHOT**: Serverless task that merges daily metrics into `CORTEX_USAGE_SNAPSHOTS`.
 
 ## Change History
-See `.cursor/DIAGRAM_CHANGELOG.md` for vhistory.
-
-
+See git history for changes to this diagram.

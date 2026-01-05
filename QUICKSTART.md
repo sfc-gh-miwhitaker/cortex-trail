@@ -44,7 +44,7 @@ By the end of this quickstart, you'll have:
 - Historical trend analysis
 - Cost projections and forecasting
 - Export-ready credit estimates
- 
+
 
 ---
 
@@ -220,7 +220,7 @@ After setup, verify everything works:
 
 - [ ] **Database created:** `SHOW DATABASES LIKE 'SNOWFLAKE_EXAMPLE'` returns 1 row
 - [ ] **Schema created:** `SHOW SCHEMAS IN DATABASE SNOWFLAKE_EXAMPLE` includes CORTEX_USAGE
-- [ ] **Views created:** `SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` returns 16 rows
+- [ ] **Views created:** `SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` returns 21 rows
 - [ ] **Table created:** `SHOW TABLES IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes CORTEX_USAGE_SNAPSHOTS
 - [ ] **Task created:** `SHOW TASKS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes TASK_DAILY_CORTEX_SNAPSHOT
 - [ ] **Task running:** Task status is "started" (check with `SHOW TASKS`)
@@ -264,7 +264,7 @@ To remove all project objects:
 
 **What's removed:**
 - API Integration: SFE_CORTEX_TRAIL_GIT_API
-- Git Repository: SFE_CORTEX_TRAIL_REPO  
+- Git Repository: SFE_CORTEX_TRAIL_REPO
 - Streamlit App: CORTEX_COST_CALCULATOR
 - CORTEX_USAGE schema (21 views, 1 table, 1 task)
 
@@ -280,4 +280,3 @@ To remove all project objects:
 ---
 
 **Ready? Start with Step 1 above. You'll be analyzing Cortex costs in 15 minutes.**
-

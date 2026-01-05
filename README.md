@@ -4,12 +4,12 @@
 
 # Snowflake Cortex Cost Calculator v2.9
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**  
-> This demo uses Snowflake features current as of December 2025.  
+> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**
+> This demo uses Snowflake features current as of December 2025.
 > After expiration, this repository will be archived and made private.
 
-**Author:** SE Community  
-**Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting  
+**Author:** SE Community
+**Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting
 **Created:** 2026-01-05 | **Expires:** 2026-02-04 (30 days) | **Status:** ACTIVE
 
 ---
@@ -132,8 +132,8 @@ Your Snowflake account:
 - 1 snapshot table for historical tracking
 - 1 serverless task (runs daily at 3 AM)
 
-**Time:** < 1 minute  
-**Wait period:** 7-14 days for meaningful usage data  
+**Time:** < 1 minute
+**Wait period:** 7-14 days for meaningful usage data
 **No configuration needed** - script is self-contained
 
 #### Step 2: Extract Customer Data
@@ -310,8 +310,8 @@ Test that you can access `ACCOUNT_USAGE`:
 
 ```sql
 -- This should return rows, not an error
-SELECT COUNT(*) 
-FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY 
+SELECT COUNT(*)
+FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
 WHERE usage_date >= DATEADD('day', -7, CURRENT_DATE());
 ```
 
@@ -692,41 +692,41 @@ Note: `ACCOUNT_USAGE` has 45 minutes to 3 hours latency.
 
 ### General Questions
 
-**Q: Is this safe to deploy in production?**  
+**Q: Is this safe to deploy in production?**
 A: Yes. The solution is read-only, creates isolated views, and has zero impact on existing workloads. It only queries `ACCOUNT_USAGE` views which are designed for this purpose.
 
-**Q: Will this impact our Snowflake bill?**  
+**Q: Will this impact our Snowflake bill?**
 A: Minimal impact. View queries use your existing warehouse and consume trivial credits. Typical cost: < $1/month.
 
-**Q: Can we customize the views?**  
+**Q: Can we customize the views?**
 A: Yes. All SQL is provided and can be modified. Add filters, change date ranges, or create custom aggregations.
 
-**Q: How do we remove everything?**  
+**Q: How do we remove everything?**
 A: Run `sql/99_cleanup/cleanup_all.sql`. Complete removal in seconds. See [Cleanup](#cleanup--removal) section.
 
 ### Data Questions
 
-**Q: Why are my views empty?**  
+**Q: Why are my views empty?**
 A: Three common reasons:
 1. No Cortex usage in the lookback period (check with `SELECT usage_date, service_type, credits_used, credits_used_compute, credits_used_cloud_services FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE service_type = 'AI_SERVICES' ORDER BY usage_date DESC LIMIT 30`)
 2. Data latency (wait 3 hours after usage)
 3. Lookback period too short (extend to 90 or 180 days)
 
-**Q: Some services show no user counts. Why?**  
+**Q: Some services show no user counts. Why?**
 A: This is expected. Some `ACCOUNT_USAGE` views (like Cortex Search hourly aggregates) don't include user-level detail. User tracking is available for Cortex Analyst, Document AI, and Functions (query-level).
 
-**Q: Can I export data to Excel/Tableau/PowerBI?**  
+**Q: Can I export data to Excel/Tableau/PowerBI?**
 A: Yes. Query any view and use Snowflake's download feature to export as CSV. Import into your tool of choice.
 
-**Q: How far back can I query historical data?**  
+**Q: How far back can I query historical data?**
 A: Limited by `ACCOUNT_USAGE` retention, typically 1 year. Adjust lookback period in queries as needed.
 
 ### Calculator Questions
 
-**Q: Can multiple SEs use the same calculator?**  
+**Q: Can multiple SEs use the same calculator?**
 A: Yes. Each SE uploads their customer's CSV independently. No data is stored between sessions.
 
-**Q: What credit price should I use?**  
+**Q: What credit price should I use?**
 A: Verify with the customer's Snowflake account team. Credit prices vary by:
 - Snowflake edition (Standard, Enterprise, Business Critical)
 - Cloud provider and region (AWS, Azure, GCP)
@@ -735,7 +735,7 @@ A: Verify with the customer's Snowflake account team. Credit prices vary by:
 
 **Reference:** [Snowflake pricing documentation](https://www.snowflake.com/pricing/)
 
-**Q: How accurate are the projections?**  
+**Q: How accurate are the projections?**
 A: Projections are directional estimates based on your growth assumptions. They become more accurate with:
 - Longer historical periods (14+ days recommended)
 - Stable usage patterns
@@ -743,12 +743,12 @@ A: Projections are directional estimates based on your growth assumptions. They 
 
 Always present projections with variance ranges.
 
-**Q: Can customers use this themselves?**  
+**Q: Can customers use this themselves?**
 A: Absolutely. Customers can deploy both monitoring and calculator in their own account for self-service cost management.
 
 ### Technical Questions
 
-**Q: What Snowflake privileges are required?**  
+**Q: What Snowflake privileges are required?**
 A: Minimum requirements:
 - `IMPORTED PRIVILEGES` on `SNOWFLAKE` database (for `ACCOUNT_USAGE` access)
 - `CREATE DATABASE` on account (for deployment)
@@ -757,17 +757,17 @@ A: Minimum requirements:
 
 Or simply use `ACCOUNTADMIN` role.
 
-**Q: Can this run on Snowflake Marketplace?**  
+**Q: Can this run on Snowflake Marketplace?**
 A: Not currently, but views can be shared via [Secure Data Sharing](https://docs.snowflake.com/en/user-guide/data-sharing-intro).
 
-**Q: What Python packages are required?**  
+**Q: What Python packages are required?**
 A: All listed in `environment.yml`:
 - streamlit (pre-installed in Streamlit in Snowflake)
 - snowflake-snowpark-python (pre-installed)
 - pandas, numpy (commonly available)
 - plotly (for visualizations)
 
-**Q: Can I schedule the calculator to email reports?**  
+**Q: Can I schedule the calculator to email reports?**
 A: Not directly. The Streamlit app is interactive. For scheduled reports, query the views directly and use [Snowflake tasks](https://docs.snowflake.com/en/user-guide/tasks-intro) to email results.
 
 ---
@@ -899,6 +899,8 @@ cortex-trail/
   - 01-GETTING_STARTED.md            # Getting started guide
   - 02-DEPLOYMENT_WALKTHROUGH.md     # Deployment walkthrough
   - 03-TROUBLESHOOTING.md            # Issue resolution
+  - 04-AI_TRANSLATE_EXAMPLE.md       # Example: translate workloads with AI_TRANSLATE
+  - 05-CACHING_STRATEGY.md           # Streamlit caching strategy (TTL + refresh behavior)
 
 - deploy_all.sql                     # Deploy everything (Git-integrated, project root)
 
@@ -983,7 +985,7 @@ cortex-trail/
 - `docs/01-GETTING_STARTED.md` - Detailed getting started
 - `docs/02-DEPLOYMENT_WALKTHROUGH.md` - Deployment walkthrough
 - `docs/03-TROUBLESHOOTING.md` - Troubleshooting guide
-- `diagrams/` - Architecture diagrams (data-flow, network-flow, auth-flow)
+- `diagrams/` - Architecture diagrams (data-model, data-flow, network-flow, auth-flow)
 
 ### Getting Help
 
@@ -1028,7 +1030,7 @@ This demonstration project includes mandatory expiration controls:
 **Enforcement Mechanisms:**
 1. **Deployment Check:** `deploy_all.sql` blocks execution after expiration date
 2. **Object Comments:** All Snowflake objects tagged with expiration date
-3. **GitHub Actions:** Automated workflow archives repository and makes it private after expiration
+3. **GitHub Actions:** Automated workflow (`.github/workflows/expire-demo.yml`) opens warning issues and attempts to archive/make private after expiration (requires `MASTER_PAT` for repo-admin actions)
 4. **README Badge:** Visual expiration indicator at top of documentation
 
 **Why Expiration?**
@@ -1044,8 +1046,8 @@ This demonstration project includes mandatory expiration controls:
 
 ---
 
-**Maintained by:** SE Community  
-**Last Updated:** November 25, 2025  
+**Maintained by:** SE Community
+**Last Updated:** November 25, 2025
 
 ---
 
