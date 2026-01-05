@@ -2,17 +2,17 @@
 
 **Detailed walkthrough with screenshots and explanations.**
 
-> 💡 **Want the fastest path?** See [`README.md`](README.md) for 2-step deployment (3-4 minutes). This guide provides extra detail and context.
+> Want the fastest path? See [`README.md`](README.md) for 2-step deployment (3-4 minutes). This guide provides extra detail and context.
 
 ---
 
-## 👋 First Time Here?
+## First Time Here?
 
 **Follow these guides in order:**
 
-1. **Deploy Everything:** Run [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight → Click "Run All" (~2 min)
+1. **Deploy Everything:** Run [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight -> Click "Run All" (~2 min)
 2. **Validate Deployment:** Review validation checks at end of script (~1 min)
-3. **Access Calculator:** Snowsight → Projects → Streamlit → CORTEX_COST_CALCULATOR (~1 min)
+3. **Access Calculator:** Snowsight -> Projects -> Streamlit -> CORTEX_COST_CALCULATOR (~1 min)
 4. **Explore Features:** Learn calculator features below (~5 min)
 
 **Total time: ~10 minutes** (includes learning)
@@ -38,12 +38,13 @@
 
 By the end of this quickstart, you'll have:
 
-- ✅ 16 monitoring views tracking all Cortex services
-- ✅ Automated daily snapshots (serverless task)
-- ✅ Interactive Streamlit cost calculator
-- ✅ Historical trend analysis
-- ✅ Multi-scenario cost projections
-- ✅ Export-ready credit estimates
+- 21 monitoring views tracking Cortex services (monitoring + attribution + forecast outputs)
+- Automated daily snapshots (serverless task)
+- Interactive Streamlit cost calculator
+- Historical trend analysis
+- Cost projections and forecasting
+- Export-ready credit estimates
+ 
 
 ---
 
@@ -77,18 +78,24 @@ Before starting, ensure you have:
 The script automatically validates. You should see:
 
 ```
-✓ Database created: SNOWFLAKE_EXAMPLE
-✓ Schema created: CORTEX_USAGE
-✓ Views created: 16 views
-✓ Snapshot table created: CORTEX_USAGE_SNAPSHOTS
-✓ Serverless task created: TASK_DAILY_CORTEX_SNAPSHOT
+OK: Database created: SNOWFLAKE_EXAMPLE
+OK: Schema created: CORTEX_USAGE
+OK: Views created: 21 views
+OK: Snapshot table created: CORTEX_USAGE_SNAPSHOTS
+OK: Serverless task created: TASK_DAILY_CORTEX_SNAPSHOT
 ```
 
 6. **Test a view:**
 
 ```sql
-SELECT * 
+SELECT
+  usage_date,
+  service_type,
+  daily_unique_users,
+  total_operations,
+  total_credits
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY
+ORDER BY usage_date DESC, total_credits DESC
 LIMIT 10;
 ```
 
@@ -100,7 +107,7 @@ LIMIT 10;
 
 #### Method 1: Snowsight UI (Recommended)
 
-1. **Navigate:** Snowsight → **Projects** → **Streamlit** → **+ Streamlit App**
+1. **Navigate:** Snowsight -> **Projects** -> **Streamlit** -> **+ Streamlit App**
 2. **Configure:**
    - **App name:** `CORTEX_COST_CALCULATOR`
    - **Location:** `SNOWFLAKE_EXAMPLE.CORTEX_USAGE` (or your preferred database/schema)
@@ -141,7 +148,7 @@ snow sql -q "CREATE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULA
 ### Step 3: Access & Use Calculator (5 minutes)
 
 1. **Open Streamlit app:**
-   - Snowsight → **Projects** → **Streamlit** → **Apps** → **CORTEX_COST_CALCULATOR**
+   - Snowsight -> **Projects** -> **Streamlit** -> **Apps** -> **CORTEX_COST_CALCULATOR**
 
 2. **Select data source:**
    - **Option A:** "Query Views (Same Account)" - For ongoing monitoring
@@ -217,7 +224,7 @@ After setup, verify everything works:
 - [ ] **Table created:** `SHOW TABLES IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes CORTEX_USAGE_SNAPSHOTS
 - [ ] **Task created:** `SHOW TASKS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes TASK_DAILY_CORTEX_SNAPSHOT
 - [ ] **Task running:** Task status is "started" (check with `SHOW TASKS`)
-- [ ] **Views return data:** `SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 1` returns rows
+- [ ] **Views return data:** `SELECT usage_date, service_type, total_credits FROM V_CORTEX_DAILY_SUMMARY ORDER BY usage_date DESC LIMIT 1` returns rows
 - [ ] **Streamlit accessible:** App loads without errors
 - [ ] **Charts render:** Historical analysis displays visualizations
 
@@ -259,7 +266,7 @@ To remove all project objects:
 - API Integration: SFE_CORTEX_TRAIL_GIT_API
 - Git Repository: SFE_CORTEX_TRAIL_REPO  
 - Streamlit App: CORTEX_COST_CALCULATOR
-- CORTEX_USAGE schema (16 views, 1 table, 1 task)
+- CORTEX_USAGE schema (21 views, 1 table, 1 task)
 
 **What's preserved (protected shared infrastructure):**
 - SNOWFLAKE_EXAMPLE database (may contain other demos)

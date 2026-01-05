@@ -2,8 +2,8 @@
  * DEMO PROJECT: Cortex Cost Calculator - Configuration Management
  * 
  * AUTHOR: SE Community
- * CREATED: 2025-01-05
- * EXPIRES: 2026-07-05 (180 days)
+ * CREATED: 2026-01-05
+ * EXPIRES: 2026-02-04 (30 days)
  * 
  * PURPOSE:
  *   Centralized configuration management for Cortex Cost Calculator.
@@ -23,7 +23,7 @@
  *   WHERE setting_name = 'CREDIT_COST_USD';
  * 
  * VERSION: 1.0
- * LAST UPDATED: 2025-01-05
+ * LAST UPDATED: 2026-01-05
  ******************************************************************************/
 
 -- ===========================================================================
@@ -31,6 +31,18 @@
 -- ===========================================================================
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
+
+-- ===========================================================================
+-- EXPIRATION CHECK (MANDATORY)
+-- ===========================================================================
+DECLARE
+    demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
+    expiration_date DATE := '2026-02-04'::DATE;
+BEGIN
+    IF (CURRENT_DATE() > expiration_date) THEN
+        RAISE demo_expired;
+    END IF;
+END;
 
 -- ===========================================================================
 -- CREATE CONFIGURATION TABLE
@@ -44,7 +56,7 @@ CREATE TABLE IF NOT EXISTS CORTEX_USAGE_CONFIG (
     updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
     updated_by VARCHAR(100) DEFAULT CURRENT_USER()
 )
-COMMENT = 'DEMO: cortex-trail - Configuration settings for Cortex Cost Calculator | EXPIRES: 2026-07-05';
+COMMENT = 'DEMO: cortex-trail - Configuration settings for Cortex Cost Calculator | EXPIRES: 2026-02-04';
 
 -- ===========================================================================
 -- INSERT DEFAULT CONFIGURATION VALUES
@@ -121,7 +133,7 @@ $$;
 -- ===========================================================================
 
 SELECT 
-    '✅ Configuration system deployed successfully' AS status,
+    'Configuration system deployed successfully' AS status,
     COUNT(*) AS settings_count,
     MAX(updated_at) AS last_updated
 FROM CORTEX_USAGE_CONFIG;

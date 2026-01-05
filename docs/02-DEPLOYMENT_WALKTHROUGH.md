@@ -6,7 +6,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 **What we'll cover:**
 1. Deploy monitoring views (5 minutes)
@@ -22,14 +22,14 @@
 
 ---
 
-## 📋 Pre-Flight Checklist
+## Pre-Flight Checklist
 
 Before starting, verify:
 
-- ✅ Access to Snowflake account (Snowsight or SnowSQL)
-- ✅ `ACCOUNTADMIN` role or role with `IMPORTED PRIVILEGES` on `SNOWFLAKE` database
-- ✅ Active warehouse
-- ✅ This repository downloaded or cloned
+- Access to Snowflake account (Snowsight or SnowSQL)
+- `ACCOUNTADMIN` role or role with `IMPORTED PRIVILEGES` on `SNOWFLAKE` database
+- Active warehouse
+- This repository downloaded or cloned
 
 ---
 
@@ -78,11 +78,11 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 **Watch for:**
 - Database creation confirmation
 - Schema creation confirmation
-- 9 view creation statements completing
+- 21 view creation statements completing (monitoring + attribution + forecast outputs)
 - Validation queries at the end
 
 **What to say:**
-> "Now we'll deploy the monitoring infrastructure. This script creates a database called SNOWFLAKE_EXAMPLE, a schema called CORTEX_USAGE, and 9 views that track different Cortex services. The script is idempotent, meaning it's safe to run multiple times."
+> "Now we'll deploy the monitoring infrastructure. This script creates a database called SNOWFLAKE_EXAMPLE, a schema called CORTEX_USAGE, and 21 views (monitoring + attribution + forecast outputs). The script is idempotent, meaning it's safe to run multiple times."
 
 > "The deployment creates read-only views that query Snowflake's ACCOUNT_USAGE. There's no data copying, no tables created, just views. This is completely non-disruptive to your production workloads."
 
@@ -92,9 +92,9 @@ At the end of the script, check validation output:
 
 ```sql
 -- You should see output like this:
-✓ SUCCESS: Database and schema created
-✓ View V_CORTEX_ANALYST_DETAIL: X rows
-✓ View V_CORTEX_SEARCH_DETAIL: Y rows
+OK: Database and schema created
+OK: View V_CORTEX_ANALYST_DETAIL: X rows
+OK: View V_CORTEX_SEARCH_DETAIL: Y rows
 ...
 ```
 
@@ -132,7 +132,14 @@ ORDER BY total_credits DESC;
 ### Step 2.2: Review Sample Data
 
 ```sql
-SELECT *
+SELECT
+    date,
+    service_type,
+    daily_unique_users,
+    total_operations,
+    total_credits,
+    credits_per_user,
+    credits_per_operation
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_COST_EXPORT
 ORDER BY date DESC, total_credits DESC
 LIMIT 20;
@@ -216,7 +223,7 @@ In the calculator sidebar:
 
 ### Step 4.2: Review Historical Analysis (Tab 1)
 
-Click **"📈 Historical Analysis"** tab
+Click **"Historical Analysis"** tab
 
 **Key metrics to highlight:**
 - Total credits consumed
@@ -236,7 +243,7 @@ Click **"📈 Historical Analysis"** tab
 
 ### Step 4.3: Generate Cost Projections (Tab 2)
 
-Click **"🔮 Cost Projections"** tab
+Click **"Cost Projections"** tab
 
 **Configuration:**
 1. **Projection Period:** Select 12 months
@@ -255,23 +262,9 @@ Click **"🔮 Cost Projections"** tab
 
 > "The Moderate scenario assumes 25% compound monthly growth - this is typical for teams actively expanding their AI capabilities. The chart shows our monthly cost projection with a confidence band. Notice how the costs grow exponentially - this is compound growth in action."
 
-### Step 4.4: Compare Scenarios (Tab 3)
+### Step 4.4: Review Summary Report
 
-Click **"📊 Scenario Comparison"** tab
-
-**Features:**
-- Side-by-side comparison of all scenarios
-- Adjustable parameters for custom scenarios
-- Export comparison table
-
-**What to say:**
-> "The Scenario Comparison tab lets us see all growth scenarios at once. This is perfect for presenting options to stakeholders or finance teams. You can see the dramatic difference between Conservative and Rapid growth."
-
-> "You can also build custom scenarios here. For example, if you're planning to roll out Cortex to 3 new departments, you might model a specific growth curve that reflects your rollout plan."
-
-### Step 4.5: Review Summary Report (Tab 4)
-
-Click **"📋 Summary Report"** tab
+Click **"Summary Report"** tab
 
 **What's included:**
 - Service-by-service credit breakdown
@@ -343,7 +336,7 @@ In the **customer's** Snowflake account:
 @sql/02_utilities/export_metrics.sql
 ```
 
-1. Click **"Download"** → Save as CSV
+1. Click **"Download"** -> Save as CSV
 2. Name: `customer_name_cortex_usage_YYYYMMDD.csv`
 
 ### SE Step 2: Analyze in Your Account
@@ -373,9 +366,9 @@ In **your** Snowflake account:
 
 ### When to Clean Up
 
-- ✅ After scoping exercise is complete (SE workflow)
-- ✅ When migrating to permanent solution
-- ✅ During account decommissioning
+- After scoping exercise is complete (SE workflow)
+- When migrating to a permanent solution
+- During account decommissioning
 
 ### How to Clean Up
 
@@ -394,15 +387,15 @@ In **your** Snowflake account:
 
 ---
 
-## 🎓 Key Takeaways
+## Key Takeaways
 
 ### What We Accomplished
 
-1. ✅ **Deployed monitoring** - 9 views tracking all Cortex services
-2. ✅ **Deployed calculator** - Interactive cost analysis tool
-3. ✅ **Analyzed usage** - Historical trends and patterns
-4. ✅ **Generated projections** - Multiple growth scenarios
-5. ✅ **Exported estimates** - Ready for proposals and budgets
+1. **Deployed monitoring** - 21 views (monitoring + attribution + forecast outputs)
+2. **Deployed calculator** - Interactive cost analysis tool
+3. **Analyzed usage** - Historical trends and patterns
+4. **Generated projections** - Growth-rate projections and forecast (when available)
+5. **Exported estimates** - Ready for proposals and budgets
 
 ### Time Investment
 
@@ -420,7 +413,7 @@ In **your** Snowflake account:
 
 ---
 
-## 📚 Next Steps
+## Next Steps
 
 ### For Solution Engineers
 
@@ -445,12 +438,12 @@ In **your** Snowflake account:
 
 ---
 
-## 🔗 Additional Resources
+## Additional Resources
 
 ### Documentation
 - **README.md** - Complete user guide
-- **help/GETTING_STARTED.md** - Quick 15-minute setup guide
-- **help/TROUBLESHOOTING.md** - Issue resolution
+- **docs/01-GETTING_STARTED.md** - Quick setup guide
+- **docs/03-TROUBLESHOOTING.md** - Issue resolution
 - **Snowflake Docs** - [Cortex](https://docs.snowflake.com/en/user-guide/snowflake-cortex)
 
 ### Support
@@ -460,7 +453,7 @@ In **your** Snowflake account:
 
 ---
 
-## 📝 Video Script Notes
+## Video Script Notes
 
 *For creating video walkthroughs*
 

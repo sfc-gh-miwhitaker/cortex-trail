@@ -2,8 +2,8 @@
  * DEMO PROJECT: Cortex Cost Calculator - SQL Test Suite
  * 
  * AUTHOR: SE Community
- * CREATED: 2025-01-05
- * EXPIRES: 2026-07-05 (180 days)
+ * CREATED: 2026-01-05
+ * EXPIRES: 2026-02-04 (30 days)
  * 
  * PURPOSE:
  *   Comprehensive testing suite for all SQL views in Cortex Cost Calculator.
@@ -20,7 +20,7 @@
  *   All tests should return "PASS" status.
  * 
  * VERSION: 1.0
- * LAST UPDATED: 2025-01-05
+ * LAST UPDATED: 2026-01-05
  ******************************************************************************/
 
 -- ===========================================================================
@@ -50,7 +50,7 @@ DECLARE
     test_start TIMESTAMP := CURRENT_TIMESTAMP();
     row_count INT;
 BEGIN
-    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_ANALYST_DETAIL LIMIT 1;
+    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_ANALYST_DETAIL;
     INSERT INTO TEST_RESULTS VALUES (
         1, 'Compilation', 'V_CORTEX_ANALYST_DETAIL compiles successfully',
         'PASS', 'View accessible, returned ' || :row_count || ' rows',
@@ -70,7 +70,7 @@ DECLARE
     test_start TIMESTAMP := CURRENT_TIMESTAMP();
     row_count INT;
 BEGIN
-    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_SEARCH_DETAIL LIMIT 1;
+    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_SEARCH_DETAIL;
     INSERT INTO TEST_RESULTS VALUES (
         2, 'Compilation', 'V_CORTEX_SEARCH_DETAIL compiles successfully',
         'PASS', 'View accessible',
@@ -90,7 +90,7 @@ DECLARE
     test_start TIMESTAMP := CURRENT_TIMESTAMP();
     row_count INT;
 BEGIN
-    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_DAILY_SUMMARY LIMIT 1;
+    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_DAILY_SUMMARY;
     INSERT INTO TEST_RESULTS VALUES (
         3, 'Compilation', 'V_CORTEX_DAILY_SUMMARY compiles successfully',
         'PASS', 'View accessible',
@@ -105,21 +105,61 @@ EXCEPTION
         );
 END;
 
--- Test 4: V_COST_ANOMALIES
+-- Test 4: V_USER_SPEND_ATTRIBUTION
 DECLARE
     test_start TIMESTAMP := CURRENT_TIMESTAMP();
     row_count INT;
 BEGIN
-    SELECT COUNT(*) INTO :row_count FROM V_COST_ANOMALIES LIMIT 1;
+    SELECT COUNT(*) INTO :row_count FROM V_USER_SPEND_ATTRIBUTION;
     INSERT INTO TEST_RESULTS VALUES (
-        4, 'Compilation', 'V_COST_ANOMALIES compiles successfully',
+        4, 'Compilation', 'V_USER_SPEND_ATTRIBUTION compiles successfully',
         'PASS', 'View accessible',
         DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
     );
 EXCEPTION
     WHEN OTHER THEN
         INSERT INTO TEST_RESULTS VALUES (
-            4, 'Compilation', 'V_COST_ANOMALIES compiles successfully',
+            4, 'Compilation', 'V_USER_SPEND_ATTRIBUTION compiles successfully',
+            'FAIL', 'Error: ' || SQLERRM,
+            DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
+        );
+END;
+
+-- Test 5: V_CORTEX_USAGE_HISTORY (snapshot-backed history view)
+DECLARE
+    test_start TIMESTAMP := CURRENT_TIMESTAMP();
+    row_count INT;
+BEGIN
+    SELECT COUNT(*) INTO :row_count FROM V_CORTEX_USAGE_HISTORY;
+    INSERT INTO TEST_RESULTS VALUES (
+        5, 'Compilation', 'V_CORTEX_USAGE_HISTORY compiles successfully',
+        'PASS', 'View accessible',
+        DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
+    );
+EXCEPTION
+    WHEN OTHER THEN
+        INSERT INTO TEST_RESULTS VALUES (
+            5, 'Compilation', 'V_CORTEX_USAGE_HISTORY compiles successfully',
+            'FAIL', 'Error: ' || SQLERRM,
+            DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
+        );
+END;
+
+-- Test 6: V_USAGE_FORECAST_12M (exists even if empty placeholder)
+DECLARE
+    test_start TIMESTAMP := CURRENT_TIMESTAMP();
+    row_count INT;
+BEGIN
+    SELECT COUNT(*) INTO :row_count FROM V_USAGE_FORECAST_12M;
+    INSERT INTO TEST_RESULTS VALUES (
+        6, 'Compilation', 'V_USAGE_FORECAST_12M compiles successfully',
+        'PASS', 'View accessible',
+        DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
+    );
+EXCEPTION
+    WHEN OTHER THEN
+        INSERT INTO TEST_RESULTS VALUES (
+            6, 'Compilation', 'V_USAGE_FORECAST_12M compiles successfully',
             'FAIL', 'Error: ' || SQLERRM,
             DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP()), CURRENT_TIMESTAMP()
         );
@@ -129,10 +169,10 @@ END;
 -- TEST CATEGORY 2: DATA QUALITY TESTS
 -- ===========================================================================
 
--- Test 5: Check for NULL service_type
+-- Test 7: Check for NULL service_type
 INSERT INTO TEST_RESULTS
 SELECT
-    5 AS test_number,
+    7 AS test_number,
     'Data Quality' AS test_category,
     'No NULL service_type in V_CORTEX_DAILY_SUMMARY' AS test_name,
     CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END AS test_status,
@@ -142,10 +182,10 @@ SELECT
 FROM V_CORTEX_DAILY_SUMMARY
 WHERE service_type IS NULL;
 
--- Test 6: Check for negative credits
+-- Test 8: Check for negative credits
 INSERT INTO TEST_RESULTS
 SELECT
-    6 AS test_number,
+    8 AS test_number,
     'Data Quality' AS test_category,
     'No negative credits in V_CORTEX_DAILY_SUMMARY' AS test_name,
     CASE WHEN COUNT(*) = 0 THEN 'PASS' ELSE 'FAIL' END AS test_status,
@@ -155,27 +195,27 @@ SELECT
 FROM V_CORTEX_DAILY_SUMMARY
 WHERE total_credits < 0;
 
--- Test 7: Check date consistency
+-- Test 9: Check date consistency
 INSERT INTO TEST_RESULTS
 SELECT
-    7 AS test_number,
+    9 AS test_number,
     'Data Quality' AS test_category,
     'Dates within valid range (90 days lookback)' AS test_name,
     CASE 
-        WHEN MIN(date) >= DATEADD('day', -90, CURRENT_DATE()) 
-         AND MAX(date) <= CURRENT_DATE() 
+        WHEN MIN(usage_date) >= DATEADD('day', -90, CURRENT_DATE()) 
+         AND MAX(usage_date) <= CURRENT_DATE() 
         THEN 'PASS' 
         ELSE 'WARN' 
     END AS test_status,
-    'Date range: ' || MIN(date)::VARCHAR || ' to ' || MAX(date)::VARCHAR AS test_message,
+    'Date range: ' || MIN(usage_date)::VARCHAR || ' to ' || MAX(usage_date)::VARCHAR AS test_message,
     0 AS execution_time_ms,
     CURRENT_TIMESTAMP() AS tested_at
 FROM V_CORTEX_DAILY_SUMMARY;
 
--- Test 8: Check for duplicate dates per service
+-- Test 10: Check for duplicate dates per service
 INSERT INTO TEST_RESULTS
 SELECT
-    8 AS test_number,
+    10 AS test_number,
     'Data Quality' AS test_category,
     'No duplicate date-service combinations' AS test_name,
     CASE WHEN MAX(cnt) = 1 THEN 'PASS' ELSE 'FAIL' END AS test_status,
@@ -183,19 +223,19 @@ SELECT
     0 AS execution_time_ms,
     CURRENT_TIMESTAMP() AS tested_at
 FROM (
-    SELECT date, service_type, COUNT(*) AS cnt
+    SELECT usage_date, service_type, COUNT(*) AS cnt
     FROM V_CORTEX_DAILY_SUMMARY
-    GROUP BY date, service_type
+    GROUP BY usage_date, service_type
 );
 
 -- ===========================================================================
 -- TEST CATEGORY 3: BUSINESS LOGIC TESTS
 -- ===========================================================================
 
--- Test 9: Verify credits_per_user calculation
+-- Test 11: Verify credits_per_user calculation
 INSERT INTO TEST_RESULTS
 SELECT
-    9 AS test_number,
+    11 AS test_number,
     'Business Logic' AS test_category,
     'credits_per_user calculated correctly' AS test_name,
     CASE 
@@ -212,62 +252,11 @@ FROM V_CORTEX_DAILY_SUMMARY
 WHERE daily_unique_users > 0
   AND ABS(credits_per_user - (total_credits / daily_unique_users)) > 0.01;
 
--- Test 10: Verify anomaly alert_level classification
-INSERT INTO TEST_RESULTS
-SELECT
-    10 AS test_number,
-    'Business Logic' AS test_category,
-    'Anomaly alert levels correctly assigned' AS test_name,
-    CASE 
-        WHEN COUNT(*) = 0 THEN 'PASS'
-        ELSE 'FAIL'
-    END AS test_status,
-    'Found ' || COUNT(*) || ' rows with invalid alert levels' AS test_message,
-    0 AS execution_time_ms,
-    CURRENT_TIMESTAMP() AS tested_at
-FROM V_COST_ANOMALIES
-WHERE alert_level NOT IN ('HIGH', 'MEDIUM', 'NORMAL', 'DECLINING', 'INSUFFICIENT_DATA');
-
 -- ===========================================================================
--- TEST CATEGORY 4: CONFIGURATION TESTS
+-- TEST CATEGORY 4: PERFORMANCE TESTS
 -- ===========================================================================
 
--- Test 11: Configuration table exists and has data
-INSERT INTO TEST_RESULTS
-SELECT
-    11 AS test_number,
-    'Configuration' AS test_category,
-    'Configuration table populated' AS test_name,
-    CASE WHEN COUNT(*) >= 10 THEN 'PASS' ELSE 'WARN' END AS test_status,
-    'Found ' || COUNT(*) || ' configuration settings' AS test_message,
-    0 AS execution_time_ms,
-    CURRENT_TIMESTAMP() AS tested_at
-FROM CORTEX_USAGE_CONFIG;
-
--- Test 12: GET_CONFIG function works
-DECLARE
-    test_result VARCHAR;
-BEGIN
-    test_result := GET_CONFIG('CREDIT_COST_USD');
-    INSERT INTO TEST_RESULTS VALUES (
-        12, 'Configuration', 'GET_CONFIG function operational',
-        'PASS', 'Function returned: ' || test_result,
-        0, CURRENT_TIMESTAMP()
-    );
-EXCEPTION
-    WHEN OTHER THEN
-        INSERT INTO TEST_RESULTS VALUES (
-            12, 'Configuration', 'GET_CONFIG function operational',
-            'FAIL', 'Error: ' || SQLERRM,
-            0, CURRENT_TIMESTAMP()
-        );
-END;
-
--- ===========================================================================
--- TEST CATEGORY 5: PERFORMANCE TESTS
--- ===========================================================================
-
--- Test 13: V_CORTEX_DAILY_SUMMARY query performance
+-- Test 12: V_CORTEX_DAILY_SUMMARY query performance
 DECLARE
     test_start TIMESTAMP := CURRENT_TIMESTAMP();
     row_count INT;
@@ -277,25 +266,8 @@ BEGIN
     exec_time_ms := DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP());
     
     INSERT INTO TEST_RESULTS VALUES (
-        13, 'Performance', 'V_CORTEX_DAILY_SUMMARY query under 5 seconds',
+        12, 'Performance', 'V_CORTEX_DAILY_SUMMARY query under 5 seconds',
         CASE WHEN :exec_time_ms < 5000 THEN 'PASS' ELSE 'WARN' END,
-        'Query took ' || :exec_time_ms || 'ms for ' || :row_count || ' rows',
-        :exec_time_ms, CURRENT_TIMESTAMP()
-    );
-END;
-
--- Test 14: V_COST_ANOMALIES query performance
-DECLARE
-    test_start TIMESTAMP := CURRENT_TIMESTAMP();
-    row_count INT;
-    exec_time_ms NUMBER(10,2);
-BEGIN
-    SELECT COUNT(*) INTO :row_count FROM V_COST_ANOMALIES;
-    exec_time_ms := DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP());
-    
-    INSERT INTO TEST_RESULTS VALUES (
-        14, 'Performance', 'V_COST_ANOMALIES query under 10 seconds',
-        CASE WHEN :exec_time_ms < 10000 THEN 'PASS' ELSE 'WARN' END,
         'Query took ' || :exec_time_ms || 'ms for ' || :row_count || ' rows',
         :exec_time_ms, CURRENT_TIMESTAMP()
     );
@@ -307,19 +279,28 @@ END;
 
 -- Display all test results
 SELECT 
-    '╔═══════════════════════════════════════════════════════════════════╗' AS separator
+    '+-------------------------------------------------------------------+' AS separator
 UNION ALL
-SELECT '║               CORTEX COST CALCULATOR - TEST RESULTS              ║'
+SELECT '|               CORTEX COST CALCULATOR - TEST RESULTS              |'
 UNION ALL
-SELECT '╚═══════════════════════════════════════════════════════════════════╝'
+SELECT '+-------------------------------------------------------------------+'
 UNION ALL
 SELECT '';
 
-SELECT * FROM TEST_RESULTS ORDER BY test_number;
+SELECT
+    test_number,
+    test_category,
+    test_name,
+    test_status,
+    test_message,
+    execution_time_ms,
+    tested_at
+FROM TEST_RESULTS
+ORDER BY test_number;
 
 -- Summary statistics
 SELECT '' AS separator;
-SELECT '═══════════════════ TEST SUMMARY ═══════════════════' AS separator;
+SELECT '------------------- TEST SUMMARY -------------------' AS separator;
 SELECT
     test_category,
     COUNT(*) AS total_tests,
@@ -336,9 +317,9 @@ SELECT '' AS separator;
 SELECT
     CASE 
         WHEN SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) = 0 THEN 
-            '✅ ALL TESTS PASSED - Deployment validated successfully!'
+            'ALL TESTS PASSED - Deployment validated successfully'
         ELSE 
-            '❌ ' || SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) || 
+            SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) || 
             ' TEST(S) FAILED - Review failures above'
     END AS overall_status,
     COUNT(*) AS total_tests,

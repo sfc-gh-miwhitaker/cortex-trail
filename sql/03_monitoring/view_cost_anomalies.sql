@@ -2,8 +2,8 @@
  * DEMO PROJECT: Cortex Cost Calculator - Cost Anomaly Detection
  * 
  * AUTHOR: SE Community
- * CREATED: 2025-01-05
- * EXPIRES: 2026-07-05 (180 days)
+ * CREATED: 2026-01-05
+ * EXPIRES: 2026-02-04 (30 days)
  * 
  * PURPOSE:
  *   Proactive anomaly detection for Cortex cost spikes.
@@ -18,7 +18,7 @@
  *   - DECLINING: Negative growth
  * 
  * VERSION: 1.0
- * LAST UPDATED: 2025-01-05
+ * LAST UPDATED: 2026-01-05
  ******************************************************************************/
 
 -- ===========================================================================
@@ -28,21 +28,33 @@
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
 -- ===========================================================================
+-- EXPIRATION CHECK (MANDATORY)
+-- ===========================================================================
+DECLARE
+    demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
+    expiration_date DATE := '2026-02-04'::DATE;
+BEGIN
+    IF (CURRENT_DATE() > expiration_date) THEN
+        RAISE demo_expired;
+    END IF;
+END;
+
+-- ===========================================================================
 -- CREATE ANOMALY DETECTION VIEW
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALIES
-COMMENT = 'DEMO: cortex-trail - Detect cost anomalies with week-over-week growth analysis | EXPIRES: 2026-07-05'
+COMMENT = 'DEMO: cortex-trail - Detect cost anomalies with week-over-week growth analysis | EXPIRES: 2026-02-04'
 AS
 WITH daily_credits AS (
     SELECT
-        date,
+        usage_date AS date,
         service_type,
         total_credits,
         daily_unique_users,
         total_operations
     FROM V_CORTEX_DAILY_SUMMARY
-    WHERE date >= DATEADD('day', -90, CURRENT_DATE())
+    WHERE usage_date >= DATEADD('day', -90, CURRENT_DATE())
 ),
 weekly_comparison AS (
     SELECT
@@ -110,15 +122,15 @@ SELECT
     CASE
         WHEN credits_7d_ago IS NULL THEN 'Insufficient historical data for comparison'
         WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.50 THEN 
-            '🚨 HIGH ALERT: ' || service_type || ' credits increased ' || 
+            'HIGH ALERT: ' || service_type || ' credits increased ' || 
             ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0) || '% vs last week'
         WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.25 THEN 
-            '⚠️ MEDIUM ALERT: ' || service_type || ' credits increased ' || 
+            'MEDIUM ALERT: ' || service_type || ' credits increased ' || 
             ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0) || '% vs last week'
         WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < -0.25 THEN 
-            '📉 DECLINING: ' || service_type || ' credits decreased ' || 
+            'DECLINING: ' || service_type || ' credits decreased ' || 
             ABS(ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0)) || '% vs last week'
-        ELSE '✅ NORMAL: No significant change detected'
+        ELSE 'NORMAL: No significant change detected'
     END AS alert_message,
     
     -- Recommended action
@@ -142,7 +154,7 @@ ORDER BY date DESC, alert_level DESC, wow_growth_pct DESC;
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALIES_CURRENT
-COMMENT = 'DEMO: cortex-trail - Current active cost anomalies (last 7 days) | EXPIRES: 2026-07-05'
+COMMENT = 'DEMO: cortex-trail - Current active cost anomalies (last 7 days) | EXPIRES: 2026-02-04'
 AS
 SELECT
     date,
@@ -174,7 +186,7 @@ ORDER BY priority_score DESC, date DESC, wow_growth_pct DESC;
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALY_SUMMARY
-COMMENT = 'DEMO: cortex-trail - Aggregated anomaly statistics by alert level | EXPIRES: 2026-07-05'
+COMMENT = 'DEMO: cortex-trail - Aggregated anomaly statistics by alert level | EXPIRES: 2026-02-04'
 AS
 SELECT
     alert_level,
@@ -204,7 +216,7 @@ ORDER BY
 
 -- Test view creation
 SELECT 
-    '✅ Anomaly detection views created successfully' AS status,
+    'Anomaly detection views created successfully' AS status,
     COUNT(*) AS view_count
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
@@ -213,23 +225,51 @@ WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
 -- Show current anomalies (if any)
 SELECT 
     CASE 
-        WHEN COUNT(*) = 0 THEN '✅ No active anomalies detected'
-        ELSE '⚠️ ' || COUNT(*) || ' active anomalies detected'
+        WHEN COUNT(*) = 0 THEN 'No active anomalies detected'
+        ELSE COUNT(*) || ' active anomalies detected'
     END AS current_status
 FROM V_COST_ANOMALIES_CURRENT;
 
 -- Display recent anomalies
-SELECT * FROM V_COST_ANOMALIES_CURRENT LIMIT 10;
+SELECT
+    date,
+    service_type,
+    total_credits,
+    credits_7d_ago,
+    wow_growth_pct,
+    alert_level,
+    alert_message,
+    recommended_action
+FROM V_COST_ANOMALIES_CURRENT
+ORDER BY date DESC, priority_score DESC, wow_growth_pct DESC
+LIMIT 10;
 
 -- Show summary statistics
-SELECT * FROM V_COST_ANOMALY_SUMMARY;
+SELECT
+    alert_level,
+    alert_count,
+    affected_services,
+    avg_growth_pct,
+    max_growth_pct,
+    total_credits_change,
+    first_occurrence,
+    last_occurrence,
+    services_list
+FROM V_COST_ANOMALY_SUMMARY
+ORDER BY
+    CASE alert_level
+        WHEN 'HIGH' THEN 1
+        WHEN 'MEDIUM' THEN 2
+        WHEN 'DECLINING' THEN 3
+        ELSE 4
+    END;
 
 /*******************************************************************************
  * USAGE EXAMPLES
  ******************************************************************************/
 
 -- Example 1: View all anomalies for last 30 days
--- SELECT * FROM V_COST_ANOMALIES 
+-- SELECT anomaly_date, service_type, cost_usd, z_score FROM V_COST_ANOMALIES
 -- WHERE date >= DATEADD('day', -30, CURRENT_DATE())
 -- ORDER BY alert_level DESC, wow_growth_pct DESC;
 

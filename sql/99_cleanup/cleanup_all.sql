@@ -2,8 +2,8 @@
  * DEMO PROJECT: Cortex Cost Calculator - Complete Cleanup
  * 
  * AUTHOR: SE Community
- * CREATED: 2025-11-25
- * EXPIRES: 2026-07-05 (180 days)
+ * CREATED: 2026-01-05
+ * EXPIRES: 2026-02-04 (30 days)
  * 
  * PURPOSE:
  *   Remove ALL objects created by deploy_all.sql
@@ -21,7 +21,7 @@
  * 
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
  *   1. Copy this ENTIRE script
- *   2. Open Snowsight → New Worksheet
+ *   2. Open Snowsight -> New Worksheet
  *   3. Paste the script
  *   4. Click "Run All"
  *   5. Wait ~30 seconds for cleanup
@@ -33,7 +33,7 @@
  * TIME: < 1 minute
  * 
  * VERSION: 2.9 (Standards-compliant: SFE_ prefixes, ASCII-only)
- * LAST UPDATED: 2025-12-02
+ * LAST UPDATED: 2026-01-05
  ******************************************************************************/
 
 -- ===========================================================================
@@ -55,7 +55,7 @@ DROP STREAMLIT IF EXISTS SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR;
 -- STEP 3: DROP MONITORING SCHEMA (with all objects)
 -- ===========================================================================
 -- CASCADE automatically drops all objects in the schema:
---   - 16 views (V_CORTEX_*)
+--   - 21 views (monitoring + attribution + forecast outputs)
 --   - 1 table (CORTEX_USAGE_SNAPSHOTS)
 --   - 1 task (TASK_DAILY_CORTEX_SNAPSHOT)
 
@@ -80,7 +80,7 @@ DROP API INTEGRATION IF EXISTS SFE_CORTEX_TRAIL_GIT_API;
 -- Removed Objects:
 --   - Task: TASK_DAILY_CORTEX_SNAPSHOT (suspended & dropped via CASCADE)
 --   - Streamlit App: CORTEX_COST_CALCULATOR
---   - Schema: CORTEX_USAGE (16 views + table + task)
+--   - Schema: CORTEX_USAGE (21 views + table + task)
 --   - Git Repository: SFE_CORTEX_TRAIL_REPO
 --   - API Integration: SFE_CORTEX_TRAIL_GIT_API
 --

@@ -2,32 +2,33 @@
 
 **Professional cost tracking and forecasting for Snowflake Cortex workloads**
 
-**⏱️ Time to Deploy:** 15 minutes  
-**💰 Value:** Accurate cost projections, budget planning, multi-scenario analysis
+**Time to Deploy:** 15 minutes  
+**Value:** Accurate cost projections, budget planning, multi-scenario analysis
 
 ---
 
-## 👋 What You'll Build
+## What You'll Build
 
 Deploy this toolkit and you'll have:
 
-- ✅ **Real-time tracking** - 16 views monitoring all Cortex services (Analyst, Search, Functions, Document AI, Fine-tuning)
-- ✅ **Historical snapshots** - Automated daily captures with trend analysis
-- ✅ **Cost projections** - Multi-scenario forecasting (3, 6, 12, 24 months)
-- ✅ **Interactive calculator** - Streamlit app deployed from Git
-- ✅ **Query-level analysis** - Identify expensive individual queries
-- ✅ **Export-ready estimates** - For proposals and finance teams
+- **Real-time tracking** - 21 views (monitoring + attribution + forecast outputs)
+- **Historical snapshots** - Automated daily captures with trend analysis
+- **Cost projections** - Forecasting (manual projections + optional ML forecast)
+- **Interactive calculator** - Streamlit app deployed from Git
+- **Query-level analysis** - Identify expensive individual queries
+- **Export-ready estimates** - For proposals and finance teams
 
 ---
 
-## 🎯 Two Ways to Use This Tool
+## Two Ways to Use This Tool
 
 ### For Solution Engineers (Two-Account Workflow)
 
 ```
-Customer Account → Deploy Monitoring → Wait 7-14 days → Extract CSV
-        ↓
-Your Account → Deploy Calculator → Upload CSV → Generate Estimates → Sales Team
+Customer Account -> Deploy Monitoring -> Wait 7-14 days -> Extract CSV
+        |
+        v
+Your Account -> Deploy Calculator -> Upload CSV -> Generate Estimates -> Sales Team
 ```
 
 **Time Investment:**
@@ -43,7 +44,7 @@ Your Account → Deploy Calculator → Upload CSV → Generate Estimates → Sal
 ### For Customers (Self-Service)
 
 ```
-Your Account → Deploy Monitoring + Calculator → Real-time Analysis → Budget Planning
+Your Account -> Deploy Monitoring + Calculator -> Real-time Analysis -> Budget Planning
 ```
 
 **Time Investment:**
@@ -58,14 +59,14 @@ Your Account → Deploy Monitoring + Calculator → Real-time Analysis → Budge
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 Before starting, ensure you have:
 
-- ✅ **Snowflake account** with Cortex usage (ideally 7-14 days of history)
-- ✅ **ACCOUNTADMIN role** OR role with `IMPORTED PRIVILEGES` on `SNOWFLAKE` database
-- ✅ **Active warehouse** for running queries
-- ✅ **Access to Snowsight** (Snowflake's web interface)
+- Snowflake account with Cortex usage (ideally 7-14 days of history)
+- `ACCOUNTADMIN` role OR role with `IMPORTED PRIVILEGES` on `SNOWFLAKE` database
+- Active warehouse for running queries
+- Access to Snowsight (Snowflake web UI)
 
 ### Quick Access Test
 
@@ -87,16 +88,16 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 
 ---
 
-## 🚀 Quick Deployment (Recommended)
+## Quick Deployment (Recommended)
 
 **Option A: Deploy Everything in One Step (~2 minutes)**
 
-Copy/paste [`deploy_all.sql`](../deploy_all.sql) into Snowsight → Click "Run All"
+Copy/paste [`deploy_all.sql`](../deploy_all.sql) into Snowsight -> Click "Run All"
 
 This deploys:
 - API Integration for GitHub access
 - Git Repository with project code
-- 16 monitoring views
+- 21 views (monitoring + attribution + forecast outputs)
 - Snapshot table + serverless task
 - Streamlit calculator app
 
@@ -104,13 +105,13 @@ This deploys:
 
 ---
 
-## 🛠️ Step-by-Step Deployment (Alternative)
+## Step-by-Step Deployment (Alternative)
 
 **Option B: Deploy Monitoring First, Then Calculator (~3-5 minutes)**
 
 ### Step 1: Deploy Monitoring Views (~1 minute)
 
-This creates 16 read-only views that track all Cortex service usage.
+This creates 21 read-only views that track Cortex service usage and expose rollups for the calculator.
 
 ### 1.1 Access Snowflake
 
@@ -130,33 +131,29 @@ This creates 16 read-only views that track all Cortex service usage.
 
 Watch for these success messages:
 
-- ✅ Database `SNOWFLAKE_EXAMPLE` created
-- ✅ Schema `CORTEX_USAGE` created
-- ✅ 9 views created successfully
-- ✅ Validation queries showing row counts
+- Database `SNOWFLAKE_EXAMPLE` created
+- Schema `CORTEX_USAGE` created
+- 21 views created successfully (monitoring + attribution + forecast outputs)
+- Validation queries showing row counts
 
 **What got created:**
 ```
 SNOWFLAKE_EXAMPLE.CORTEX_USAGE
-├── V_CORTEX_ANALYST_DETAIL
-├── V_CORTEX_SEARCH_DETAIL
-├── V_CORTEX_SEARCH_SERVING_DETAIL
-├── V_CORTEX_FUNCTIONS_DETAIL
-├── V_CORTEX_FUNCTIONS_QUERY_DETAIL
-├── V_DOCUMENT_DETAIL
-├── V_CORTEX_DAILY_SUMMARY           ← Main rollup view
-├── V_CORTEX_COST_EXPORT             ← Pre-formatted for calculator
-└── V_METERING_SERVICES              ← High-level validation
+- V_CORTEX_DAILY_SUMMARY           (main rollup view)
+- V_CORTEX_COST_EXPORT             (export-ready for calculator / CSV workflow)
+- V_USER_SPEND_ATTRIBUTION         (user -> service -> feature -> model attribution, where available)
+- V_CORTEX_USAGE_HISTORY           (snapshot-backed history view for faster queries)
+- V_USAGE_FORECAST_12M             (forecast output view; may be empty if model unavailable)
 ```
 
-**⚠️ Note:** Views may show 0 rows if:
+Note: Views may show 0 rows if:
 - No Cortex usage in last 90 days
 - Data latency (wait 3 hours after usage)
 - This is normal and won't prevent deployment
 
 ---
 
-## 📊 Step 2: Deploy Calculator (5 minutes)
+## Step 2: Deploy Calculator (5 minutes)
 
 Deploy the interactive Streamlit calculator in Snowflake.
 
@@ -198,11 +195,11 @@ Fill in the form:
 2. Wait 30 seconds for the app to initialize
 3. The app will automatically launch when ready
 
-**🎉 Success!** You now have a fully functional cost calculator.
+**Success!** You now have a fully functional cost calculator.
 
 ---
 
-## 💰 Step 3: Analyze Your Costs (5 minutes)
+## Step 3: Analyze Your Costs (5 minutes)
 
 Now let's use the calculator to understand your Cortex spending.
 
@@ -222,7 +219,7 @@ In the calculator sidebar:
 
 ### 3.2 Review Historical Analysis
 
-Click the **"📈 Historical Analysis"** tab:
+Click the **"Historical Analysis"** tab:
 
 **You'll see:**
 - **Summary metrics:** Total credits, total cost, avg daily usage
@@ -238,7 +235,7 @@ Click the **"📈 Historical Analysis"** tab:
 
 ### 3.3 Generate Cost Projections
 
-Click the **"🔮 Cost Projections"** tab:
+Click the **"Cost Projections"** tab:
 
 **Configure projections:**
 1. **Projection Period:** Choose 3, 6, 12, or 24 months
@@ -255,21 +252,19 @@ Click the **"🔮 Cost Projections"** tab:
 - **Interactive chart** with confidence bands
 - **Monthly breakdown table**
 
-### 3.4 Model User Personas (Multi-User Calculator)
+### 3.4 Model User Personas (Cost per User Calculator)
 
-Scroll down to the **"💰 Cost per User Calculator"** section:
+Scroll down to the **"Cost per User Calculator"** section:
 
 **Define your user types:**
 1. **Add/Edit Personas:**
-   - Default: Power User (5 @ 2.0x), Regular User (15 @ 1.0x), Casual User (10 @ 0.3x)
-   - Click ➕ **Add Persona** to add more
-   - Click 🗑️ to remove personas
-   - Adjust user counts and intensity multipliers
+   - Provide: persona name, user count, and requests per day
+   - Use "Add Another Persona" to add more
+   - Use "Remove" to delete a persona
 
 2. **Set Baseline Usage:**
-   - Operations per user per month for each service
-   - Pre-filled with historical averages
-   - All personas multiply from this baseline
+   - The calculator uses your historical telemetry (when available) as the baseline for cost-per-request
+   - You can optionally toggle to use official published rates for Cortex Analyst
 
 **You'll see:**
 - **Total users** across all personas
@@ -282,17 +277,9 @@ Scroll down to the **"💰 Cost per User Calculator"** section:
 - Department cost allocation
 - Optimizing user mix for budget constraints
 
-### 3.5 Compare Scenarios
+### 3.5 Export Estimates
 
-Click the **"📊 Scenario Comparison"** tab:
-
-- **Side-by-side** comparison of all growth scenarios
-- **Custom scenario builder** with specific parameters
-- **Export comparison table** for stakeholder presentations
-
-### 3.6 Export Estimates
-
-Click the **"📋 Summary Report"** tab:
+Click the **"Summary Report"** tab:
 
 1. Review **credit breakdown by service**
 2. Click **"Download Credit Estimate (CSV)"**
@@ -306,7 +293,7 @@ Click the **"📋 Summary Report"** tab:
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### No Data Showing
 
@@ -314,7 +301,10 @@ Click the **"📋 Summary Report"** tab:
 
 1. **Check if Cortex has been used:**
    ```sql
-   SELECT * 
+   SELECT
+     usage_date,
+     service_type,
+     credits_used
    FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY 
    WHERE service_type = 'AI_SERVICES' 
    ORDER BY usage_date DESC 
@@ -361,7 +351,7 @@ See **`help/TROUBLESHOOTING.md`** for comprehensive issue resolution including:
 
 ---
 
-## ✨ What's Next?
+## What's Next?
 
 ### Use the Calculator Regularly
 
@@ -400,7 +390,7 @@ GRANT USAGE ON STREAMLIT CORTEX_COST_CALCULATOR TO ROLE <ROLE_NAME>;
 
 ---
 
-## 🧹 Cleanup (When Finished)
+## Cleanup (When Finished)
 
 To remove all monitoring objects:
 
@@ -418,7 +408,7 @@ All cleanup is safe and reversible by re-running the deployment script.
 
 ---
 
-## 💡 Success Stories
+## Success Stories
 
 ### Solution Engineer Workflow
 *"Deployed monitoring in 3 customer accounts during POCs. At the end, extracted CSVs and generated professional cost estimates in minutes. Sales team loved the multi-scenario projections."*
@@ -431,26 +421,26 @@ All cleanup is safe and reversible by re-running the deployment script.
 
 ---
 
-## 📊 Value Proposition
+## Value Proposition
 
 ### Before This Tool
-- ❌ Manual SQL queries per customer
-- ❌ Hours of Excel calculations
-- ❌ Inconsistent methodologies
-- ❌ Basic, single-scenario projections
+- Manual SQL queries per customer
+- Hours of Excel calculations
+- Inconsistent methodologies
+- Basic, single-scenario projections
 
 ### After This Tool
-- ✅ Automated tracking and projections
-- ✅ 5-10 minutes per analysis
-- ✅ Professional, repeatable process
-- ✅ Multi-scenario, multi-persona modeling
-- ✅ Export-ready estimates
+- Automated tracking and projections
+- 5-10 minutes per analysis
+- Professional, repeatable process
+- Multi-scenario, multi-persona modeling
+- Export-ready estimates
 
 **ROI:** Save 2-4 hours per customer engagement
 
 ---
 
-## 🎯 Key Features
+## Key Features
 
 | Feature | Benefit |
 |---------|---------|
@@ -464,7 +454,7 @@ All cleanup is safe and reversible by re-running the deployment script.
 
 ---
 
-## 🔒 Technical Highlights
+## Technical Highlights
 
 - **Data Source:** Snowflake `ACCOUNT_USAGE` views (authoritative billing data)
 - **Technology:** Streamlit in Snowflake (no external hosting)
@@ -475,7 +465,7 @@ All cleanup is safe and reversible by re-running the deployment script.
 
 ---
 
-## 📞 Questions?
+## Questions?
 
 - **Setup issues?** See `help/TROUBLESHOOTING.md`
 - **Need details?** See `README.md` for complete documentation

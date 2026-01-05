@@ -1,7 +1,7 @@
 # Auth Flow - Cortex Trail
 Author: SE Community
 Last Updated: 2026-01-05
-Expires: 2026-07-05 (180 days from creation)
+Expires: 2026-02-04 (30 days from creation)
 Status: Reference Implementation
 
 ![Snowflake](https://img.shields.io/badge/Snowflake-29B5E8?style=for-the-badge&logo=snowflake&logoColor=white)

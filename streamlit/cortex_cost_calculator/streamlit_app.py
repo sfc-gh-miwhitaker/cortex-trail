@@ -11,7 +11,7 @@ session = get_active_session()
 
 st.set_page_config(
     page_title="Cortex Cost Calculator",
-    page_icon="📊",
+    page_icon="C",
     layout="wide"
 )
 
@@ -44,20 +44,26 @@ def fetch_data_from_views(lookback_days=30):
     try:
         df = session.sql(snapshot_query).to_pandas()
         if not df.empty:
-            st.success(f"✅ Loaded {len(df)} rows from snapshot table (optimized for speed)")
+            st.success(f"Loaded {len(df)} rows from snapshot table (optimized for speed)")
             return df
         else:
-            st.info("ℹ️ Snapshot table is empty. Falling back to live views...")
+            st.info("Snapshot table is empty. Falling back to live views...")
     except Exception as e:
         error_msg = str(e).lower()
         if "does not exist" in error_msg or "invalid identifier" in error_msg:
-            st.warning("⚠️ Snapshot table not found. Using live views (may be slower). Run task manually to create snapshots: `EXECUTE TASK TASK_DAILY_CORTEX_SNAPSHOT`")
+            st.warning(
+                "Snapshot table not found. Using live views (may be slower). "
+                "To create snapshots, run: `EXECUTE TASK SNOWFLAKE_EXAMPLE.CORTEX_USAGE.TASK_DAILY_CORTEX_SNAPSHOT`"
+            )
         elif "insufficient privileges" in error_msg or "access denied" in error_msg:
-            st.error(f"❌ Permission denied accessing snapshot table. Please ensure you have SELECT privileges on SNOWFLAKE_EXAMPLE.CORTEX_USAGE schema.")
+            st.error(
+                "Permission denied accessing snapshot table. Please ensure you have SELECT privileges on "
+                "SNOWFLAKE_EXAMPLE.CORTEX_USAGE."
+            )
             st.info("**Troubleshooting:** Run `GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE TO ROLE <YOUR_ROLE>;`")
             return pd.DataFrame()
         else:
-            st.warning(f"⚠️ Error accessing snapshot table: {str(e)[:100]}. Falling back to live views...")
+            st.warning(f"Error accessing snapshot table: {str(e)[:100]}. Falling back to live views...")
     
     # Fallback to live view if snapshot is empty or doesn't exist
     live_query = f"""
@@ -82,21 +88,23 @@ def fetch_data_from_views(lookback_days=30):
     try:
         df = session.sql(live_query).to_pandas()
         if df.empty:
-            st.warning("⚠️ No data found in the specified lookback period. This may be because:")
-            st.info("""
-            - No Cortex usage in the last {lookback_days} days
-            - ACCOUNT_USAGE data is still being populated (wait 3 hours after usage)
-            - Insufficient privileges on SNOWFLAKE.ACCOUNT_USAGE views
-            
-            **To verify access:** Run `SELECT COUNT(*) FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE SERVICE_TYPE = 'AI_SERVICES'`
-            """)
+            st.warning("No data found in the specified lookback period. This may be because:")
+            st.info(
+                f"""
+                - No Cortex usage in the last {lookback_days} days
+                - ACCOUNT_USAGE data is still being populated (wait 3 hours after usage)
+                - Insufficient privileges on SNOWFLAKE.ACCOUNT_USAGE views
+
+                **To verify access:** Run `SELECT COUNT(*) FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE SERVICE_TYPE = 'AI_SERVICES'`
+                """
+            )
         else:
-            st.info(f"ℹ️ Loaded {len(df)} rows from live views")
+            st.info(f"Loaded {len(df)} rows from live views")
         return df
     except Exception as e:
         error_msg = str(e).lower()
         if "insufficient privileges" in error_msg or "access denied" in error_msg:
-            st.error("❌ Permission denied accessing monitoring views.")
+            st.error("Permission denied accessing monitoring views.")
             st.info("""
             **Required privileges:**
             1. `GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;`
@@ -105,10 +113,10 @@ def fetch_data_from_views(lookback_days=30):
             **Or switch to ACCOUNTADMIN:** `USE ROLE ACCOUNTADMIN;`
             """)
         elif "does not exist" in error_msg:
-            st.error("❌ Monitoring views not found. Please deploy monitoring infrastructure first.")
+            st.error("Monitoring views not found. Please deploy monitoring infrastructure first.")
             st.info("**Deploy views:** Run `sql/01_deployment/deploy_cortex_monitoring.sql`")
         else:
-            st.error(f"❌ Error fetching data: {str(e)}")
+            st.error(f"Error fetching data: {str(e)}")
             st.info("**Check:** Warehouse is running, views exist, and you have proper permissions")
         return pd.DataFrame()
 
@@ -132,14 +140,14 @@ def fetch_user_spend_attribution(lookback_days=30):
     try:
         df = session.sql(query).to_pandas()
         if df.empty:
-            st.info("ℹ️ No user attribution data found. This view requires query-level tracking.")
+            st.info("No user attribution data found. This view requires query-level tracking.")
         return df
     except Exception as e:
         error_msg = str(e).lower()
         if "does not exist" in error_msg:
-            st.warning("⚠️ User attribution view not found. Deploy latest monitoring views.")
+            st.warning("User attribution view not found. Deploy the latest monitoring views.")
         else:
-            st.error(f"❌ Error fetching user attribution: {str(e)[:100]}")
+            st.error(f"Error fetching user attribution: {str(e)[:100]}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
@@ -158,15 +166,15 @@ def fetch_ml_forecast_12m():
     try:
         df = session.sql(query).to_pandas()
         if df.empty:
-            st.info("ℹ️ ML forecast model not available. Using manual projection methods instead.")
+            st.info("ML forecast model not available. Using manual projection methods instead.")
             st.caption("**To enable ML forecasting:** Ensure you have privileges to create SNOWFLAKE.ML.FORECAST models")
         return df
     except Exception as e:
         error_msg = str(e).lower()
         if "does not exist" in error_msg:
-            st.info("ℹ️ Forecast view not found. Using manual projections.")
+            st.info("Forecast view not found. Using manual projections.")
         else:
-            st.warning(f"⚠️ ML forecast unavailable: {str(e)[:100]}")
+            st.warning(f"ML forecast unavailable: {str(e)[:100]}")
         return pd.DataFrame()
 
 def calculate_30day_totals(df):
@@ -240,12 +248,12 @@ def load_data_from_csv(uploaded_file):
     try:
         df = pd.read_csv(uploaded_file)
         
-        # Expected columns from extract_metrics_for_calculator.sql
-        required_cols = ['DATE', 'SERVICE_TYPE', 'TOTAL_CREDITS']
+        # Expected columns from sql/02_utilities/export_metrics.sql (Option 1/2)
+        required_cols = ['DATE', 'SERVICE_TYPE', 'DAILY_UNIQUE_USERS', 'TOTAL_OPERATIONS', 'TOTAL_CREDITS']
         missing_cols = [col for col in required_cols if col not in df.columns]
         
         if missing_cols:
-            st.error(f"❌ CSV missing required columns: {', '.join(missing_cols)}")
+            st.error(f"CSV missing required columns: {', '.join(missing_cols)}")
             st.info(f"**Expected columns:** {', '.join(required_cols)}")
             st.info("**Source query:** Use `sql/02_utilities/export_metrics.sql` to generate the correct CSV format")
             return None
@@ -255,17 +263,17 @@ def load_data_from_csv(uploaded_file):
         
         # Validate row count
         if len(df) == 0:
-            st.error("❌ CSV file is empty. No data rows found.")
+            st.error("CSV file is empty. No data rows found.")
             return None
         
         if len(df) > 100000:
-            st.warning(f"⚠️ Large file detected ({len(df):,} rows). Processing may be slow. Consider filtering date range.")
+            st.warning(f"Large file detected ({len(df):,} rows). Processing may be slow. Consider filtering the date range.")
         
         # Convert and validate date column
         try:
             df['DATE'] = pd.to_datetime(df['DATE'])
         except Exception as date_err:
-            st.error(f"❌ Invalid date format in DATE column: {str(date_err)}")
+            st.error(f"Invalid date format in DATE column: {str(date_err)}")
             st.info("**Expected format:** YYYY-MM-DD (e.g., 2025-01-05)")
             return None
         
@@ -275,53 +283,59 @@ def load_data_from_csv(uploaded_file):
         date_range_days = (max_date - min_date).days
         
         if date_range_days < 0:
-            st.error("❌ Invalid date range: end date is before start date")
+            st.error("Invalid date range: end date is before start date")
             return None
         
         if date_range_days > 730:  # 2 years
-            st.warning(f"⚠️ Date range spans {date_range_days} days (> 2 years). This may impact performance.")
+            st.warning(f"Date range spans {date_range_days} days (> 2 years). This may impact performance.")
         
         # Validate TOTAL_CREDITS column
         if not pd.api.types.is_numeric_dtype(df['TOTAL_CREDITS']):
-            st.error("❌ TOTAL_CREDITS column must contain numeric values")
+            st.error("TOTAL_CREDITS column must contain numeric values")
             return None
         
         # Check for negative credits
         negative_credits = df[df['TOTAL_CREDITS'] < 0]
         if len(negative_credits) > 0:
-            st.error(f"❌ Found {len(negative_credits)} rows with negative credits. Credits must be >= 0")
+            st.error(f"Found {len(negative_credits)} rows with negative credits. Credits must be >= 0")
             st.dataframe(negative_credits.head())
             return None
         
         # Check for null credits
         null_credits = df[df['TOTAL_CREDITS'].isna()]
         if len(null_credits) > 0:
-            st.warning(f"⚠️ Found {len(null_credits)} rows with NULL credits. These will be excluded from calculations.")
+            st.warning(f"Found {len(null_credits)} rows with NULL credits. These will be excluded from calculations.")
             df = df[df['TOTAL_CREDITS'].notna()]
         
         # Validate SERVICE_TYPE values
         known_services = [
-            'Cortex Analyst', 'Cortex Search', 'Cortex Search Serving',
-            'Cortex Functions', 'Document AI', 'Cortex Fine-tuning'
+            'Cortex Analyst',
+            'Cortex Search',
+            'Cortex Functions',
+            'Cortex Document Processing',
+            'Cortex Fine-tuning',
         ]
         unknown_services = set(df['SERVICE_TYPE'].unique()) - set(known_services)
         if unknown_services:
-            st.info(f"ℹ️ Found unknown service types: {', '.join(unknown_services)}. These will be included in analysis.")
+            st.info(f"Found unknown service types: {', '.join(unknown_services)}. These will be included in analysis.")
         
         # Success message
-        st.success(f"✅ CSV loaded successfully: {len(df):,} rows from {min_date.strftime('%Y-%m-%d')} to {max_date.strftime('%Y-%m-%d')} ({date_range_days} days)")
+        st.success(
+            f"CSV loaded successfully: {len(df):,} rows from {min_date.strftime('%Y-%m-%d')} to "
+            f"{max_date.strftime('%Y-%m-%d')} ({date_range_days} days)"
+        )
         
         return df
         
     except pd.errors.EmptyDataError:
-        st.error("❌ CSV file is empty or corrupted")
+        st.error("CSV file is empty or corrupted")
         return None
     except pd.errors.ParserError as parse_err:
-        st.error(f"❌ CSV parsing error: {str(parse_err)}")
+        st.error(f"CSV parsing error: {str(parse_err)}")
         st.info("**Check:** Ensure file is valid CSV format with proper delimiters")
         return None
     except Exception as e:
-        st.error(f"❌ Error loading CSV: {str(e)}")
+        st.error(f"Error loading CSV: {str(e)}")
         st.info("**Troubleshooting:** Verify file format matches export query output")
         return None
 
@@ -353,10 +367,10 @@ def main():
         st.header("Configuration")
         
         # Cache management section
-        st.markdown("### 📊 Data Freshness")
-        if st.button("🔄 Refresh Data", help="Clear cache and reload data from source"):
+        st.markdown("### Data Freshness")
+        if st.button("Refresh Data", help="Clear cache and reload data from source"):
             st.cache_data.clear()
-            st.success("✅ Cache cleared! Data will be refreshed on next load.")
+            st.success("Cache cleared. Data will be refreshed on next load.")
             st.rerun()
         
         # Show last updated time
@@ -381,11 +395,11 @@ def main():
                 value=30,
                 help="Number of days of historical data to analyze"
             )
-            st.caption("ℹ️ Data is cached for 5 minutes to improve performance. Use 'Refresh Data' to force reload.")
+        st.caption("Data is cached for 5 minutes to improve performance. Use 'Refresh Data' to force reload.")
         else:
-            st.markdown("### 📁 Upload Customer Data")
+            st.markdown("### Upload Customer Data")
             uploaded_file = st.file_uploader(
-                "Upload CSV from extract_metrics_for_calculator.sql",
+                "Upload CSV from sql/02_utilities/export_metrics.sql",
                 type=['csv'],
                 help="CSV file exported from customer's Snowflake account"
             )
@@ -408,8 +422,7 @@ def main():
             help="Variance range for cost estimates"
         ) / 100
         
-        if st.button("Refresh Data"):
-            st.cache_data.clear()
+        # "Refresh Data" is handled above (also reruns the app).
     
     # Load data based on source
     df = None
@@ -429,7 +442,7 @@ def main():
             st.info("Please upload a CSV file from the customer's account.")
             st.markdown("""
             **To get customer data:**
-            1. Run `@sql/extract_metrics_for_calculator.sql` in customer's Snowflake
+            1. Run `@sql/02_utilities/export_metrics.sql` in customer's Snowflake
             2. Download results as CSV
             3. Upload here
             """)
@@ -553,7 +566,7 @@ def show_user_spend_attribution(data_source, lookback_days, credit_cost):
         sunburst_df,
         path=["USER_NAME", "SERVICE_TYPE", "FEATURE_NAME", "MODEL_NAME"],
         values="CREDITS_USED",
-        title="User → service → feature → model (credits)",
+        title="User -> service -> feature -> model (credits)",
     )
     st.plotly_chart(fig_sb, use_container_width=True)
 
@@ -783,7 +796,7 @@ def show_historical_analysis(df, credit_cost):
     st.divider()
     
     # 30-Day Rolling Totals
-    st.subheader("📊 30-Day Rolling Totals (Most Recent)")
+    st.subheader("30-Day Rolling Totals (Most Recent)")
     st.caption("Rolling 30-day windows for cost estimation")
     
     # Calculate 30-day totals
@@ -942,7 +955,7 @@ def fetch_aisql_data():
 
 def show_aisql_functions(credit_cost):
     """Display AISQL Functions analysis tab (NEW in v2.5)"""
-    st.header("🤖 AISQL Function & Model Analysis")
+    st.header("AISQL Function and Model Analysis")
     st.markdown("**Detailed tracking of Cortex AISQL functions and models** (v2.7: Updated Dec 2025 - new models, deprecation warnings)")
     
     # ========================================================================
@@ -954,7 +967,7 @@ def show_aisql_functions(credit_cost):
     
     if function_summary_df is None:
         st.error("Unable to load AISQL function data.")
-        st.info("💡 Make sure you've deployed v2.5 views using deploy_cortex_monitoring.sql")
+        st.info("Make sure you've deployed the monitoring views using deploy_cortex_monitoring.sql")
         return
     
     if function_summary_df.empty:
@@ -983,7 +996,7 @@ def show_aisql_functions(credit_cost):
     # Section 1: Function & Model Overview
     # ========================================================================
     
-    st.subheader("📊 Function & Model Overview")
+    st.subheader("Function and Model Overview")
     
     col1, col2, col3, col4 = st.columns(4)
     
@@ -1010,7 +1023,7 @@ def show_aisql_functions(credit_cost):
     # Section 2: Top Functions by Cost
     # ========================================================================
     
-    st.subheader("💰 Top Functions by Cost")
+    st.subheader("Top Functions by Cost")
     
     # Aggregate by function (across all models)
     top_functions = function_summary_df.groupby('FUNCTION_NAME').agg({
@@ -1060,7 +1073,7 @@ def show_aisql_functions(credit_cost):
     # ========================================================================
     
     if not model_comparison_df.empty:
-        st.subheader("🎯 Model Comparison")
+        st.subheader("Model Comparison")
         
         # Prepare data
         model_comparison_df['COST_USD'] = model_comparison_df['TOTAL_CREDITS'] * credit_cost
@@ -1085,7 +1098,7 @@ def show_aisql_functions(credit_cost):
         st.plotly_chart(fig_models, use_container_width=True)
         
         # Model comparison table
-        st.markdown("**📋 Model Details**")
+        st.markdown("**Model Details**")
         display_cols_model = ['MODEL_NAME', 'FUNCTIONS_USED', 'TOTAL_CALLS', 'TOTAL_CREDITS', 
                               'COST_USD', 'COST_PER_MILLION_USD', 'TOTAL_TOKENS']
         st.dataframe(
@@ -1107,7 +1120,7 @@ def show_aisql_functions(credit_cost):
     # Section 4: Function-Model Heatmap (Collapsible for performance)
     # ========================================================================
     
-    with st.expander("🔥 Function-Model Usage Heatmap", expanded=False):
+    with st.expander("Function-Model Usage Heatmap", expanded=False):
         # Create pivot table for heatmap
         heatmap_data = function_summary_df.pivot_table(
             index='FUNCTION_NAME',
@@ -1134,7 +1147,7 @@ def show_aisql_functions(credit_cost):
     # ========================================================================
     
     if not daily_trends_df.empty:
-        with st.expander("📈 Daily Usage Trends (Last 30 Days)", expanded=False):
+        with st.expander("Daily Usage Trends (Last 30 Days)", expanded=False):
             # Aggregate by date and function
             daily_agg = daily_trends_df.groupby(['USAGE_DATE', 'FUNCTION_NAME']).agg({
                 'DAILY_CREDITS': 'sum',
@@ -1159,7 +1172,7 @@ def show_aisql_functions(credit_cost):
     # Section 6: Detailed Function-Model Table (Collapsible for performance)
     # ========================================================================
     
-    with st.expander("📋 Detailed Function-Model Breakdown", expanded=False):
+    with st.expander("Detailed Function-Model Breakdown", expanded=False):
         st.markdown("**Complete data table with all metrics**")
         
         # Prepare detailed table
@@ -1192,14 +1205,14 @@ def show_aisql_functions(credit_cost):
         # Download button
         csv = detailed_df.to_csv(index=False)
         st.download_button(
-            label="📥 Download AISQL Data as CSV",
+            label="Download AISQL Data as CSV",
             data=csv,
             file_name=f"aisql_function_analysis_{datetime.now().strftime('%Y%m%d')}.csv",
             mime="text/csv"
         )
     
     st.markdown("---")
-    st.info("💡 **Tip**: Use this data to optimize your AISQL function usage and choose the most cost-effective models for your use case.")
+    st.info("Tip: Use this data to optimize your AISQL function usage and choose the most cost-effective models for your use case.")
 
 def show_cost_projections(df, credit_cost, variance_pct):
     """Display cost projections tab"""
@@ -1209,20 +1222,20 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # Important: API vs SQL Function Usage
     # ========================================================================
     st.info("""
-    ### 🔍 Understanding Your Cortex Usage Costs
-    
-    **Two Ways to Use Cortex Services:**
-    
-    1. **SQL Functions** (e.g., `SELECT SNOWFLAKE.CORTEX.COMPLETE(...)`)
-       - ✅ Tracked via `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY` (query, function, model, tokens, credits)
-       - ✅ Query-level grouping is available (by `QUERY_ID`)
-       - ✅ Full visibility for SQL-driven AI function usage: per-query + per-model + time trends
-    
+    ### Understanding Your Cortex Usage Costs
+
+    **Two ways to use Cortex services:**
+
+    1. **SQL functions** (e.g., `SELECT SNOWFLAKE.CORTEX.COMPLETE(...)`)
+       - Tracked via `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY` (query, function, model, tokens, credits)
+       - Query-level grouping is available (by `QUERY_ID`)
+       - Best visibility for per-query and per-model usage telemetry
+
     2. **REST API** (e.g., `POST /api/v2/cortex/complete`)
-       - ℹ️ Granular usage attribution in `ACCOUNT_USAGE` is not available at the same detail as SQL queries (Snowflake limitation)
-       - ✅ Total AI services credits can still be validated using metering (`METERING_DAILY_HISTORY`, service_type = `AI_SERVICES`)
-    
-    **💡 Key Insight:** This calculator’s detailed function/model breakdown is based on **SQL query telemetry**
+       - Granular attribution is not available at the same detail as SQL queries (Snowflake limitation)
+       - Total AI services credits can still be validated using metering (`METERING_DAILY_HISTORY`, service_type = `AI_SERVICES`)
+
+    **Key insight:** this calculator's detailed function/model breakdown is based on SQL query telemetry
     (`CORTEX_AISQL_USAGE_HISTORY`). If you use the REST API heavily, reconcile totals using the metering view
     (`V_METERING_AI_SERVICES`) to confirm coverage.
     """)
@@ -1230,7 +1243,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # ========================================================================
     # Snowflake Official Consumption Rates (Reference)
     # ========================================================================
-    with st.expander("📘 Snowflake Official Consumption Rates (Updated Dec 2025)", expanded=False):
+    with st.expander("Snowflake Official Consumption Rates (Updated Dec 2025)", expanded=False):
         st.markdown("""
         **Reference: Snowflake AI Features Credit Table (Table 6)**
         
@@ -1242,10 +1255,10 @@ def show_cost_projections(df, credit_cost, variance_pct):
         
         # Create tabs for different service categories
         rate_tab1, rate_tab2, rate_tab3, rate_tab4 = st.tabs([
-            "📄 Document AI & Search",
-            "🤖 LLM Functions", 
-            "🎯 Text Functions",
-            "🖼️ Embeddings"
+            "Document AI and Search",
+            "LLM Functions",
+            "Text Functions",
+            "Embeddings",
         ])
         
         with rate_tab1:
@@ -1432,15 +1445,15 @@ def show_cost_projections(df, credit_cost, variance_pct):
         )
         
         st.info("""
-        💡 **How to validate your costs:**
+        **How to validate your costs:**
         1. Check the "Historical Analysis" tab for actual credit consumption
         2. Compare credits/operation ratios with rates above
         3. For AISQL functions, check the "AISQL Functions" tab for per-token costs
         4. If rates differ significantly, verify your ACCOUNT_USAGE data
         """)
         
-        st.success("""
-        ✅ **Important Notes:**
+        st.info("""
+        **Important Notes:**
         - **Pricing is identical** for both SQL functions AND REST API calls (same rates apply)
         - **All usage is tracked** in ACCOUNT_USAGE views with tokens, credits, function, and model details
         - AISQL function costs vary by model (claude, llama, mistral, etc.) and token usage
@@ -1452,7 +1465,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
         # Calculate actual rates from data if available
         if not df.empty:
             st.markdown("---")
-            st.markdown("**📊 Your Actual Consumption Rates (from ACCOUNT_USAGE)**")
+            st.markdown("**Your Actual Consumption Rates (from ACCOUNT_USAGE)**")
             
             actual_rates = []
             
@@ -1483,13 +1496,13 @@ def show_cost_projections(df, credit_cost, variance_pct):
                         display_rate = f'{rate_per_op:.4f} credits per operation'
                         metric = 'operations'
                     
-                    # Check if within range (±50% tolerance)
+                    # Check if within range (+/-50% tolerance)
                     if expected:
                         actual_value = rate_per_op if 'Analyst' in service else rate_per_op * 1000
                         within_range = abs(actual_value - expected) / expected < 0.5
-                        status = '✅ Within range' if within_range else '⚠️ Verify'
+                        status = 'Within range' if within_range else 'Verify'
                     else:
-                        status = '📊 No baseline'
+                        status = 'No baseline'
                     
                     actual_rates.append({
                         'Service': service,
@@ -1507,8 +1520,8 @@ def show_cost_projections(df, credit_cost, variance_pct):
                     hide_index=True
                 )
                 
-                st.success("""
-                ✅ **Validation:** Your actual rates are calculated from ACCOUNT_USAGE data and represent real consumption. 
+                st.info("""
+                **Validation:** Your actual rates are calculated from ACCOUNT_USAGE data and represent real consumption.
                 Differences from published rates may occur due to:
                 - Different models/configurations
                 - Mixed operation types (e.g., Layout vs OCR)
@@ -1520,7 +1533,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # ========================================================================
     # Cost Calculation Methodology
     # ========================================================================
-    with st.expander("🧮 How We Calculate Your Costs (SQL vs API Usage)", expanded=False):
+    with st.expander("How We Calculate Your Costs (SQL vs API Usage)", expanded=False):
         st.markdown("""
         ### Calculation Methodology
         
@@ -1534,11 +1547,11 @@ def show_cost_projections(df, credit_cost, variance_pct):
         """)
         
         comparison_data = pd.DataFrame([
-            {'Feature': 'Total AI services credits', 'SQL Functions': '✅ via metering validation', 'REST API': '✅ via metering validation'},
-            {'Feature': 'Function & model breakdown', 'SQL Functions': '✅ via CORTEX_AISQL_USAGE_HISTORY', 'REST API': 'ℹ️ Limited'},
-            {'Feature': 'Per-query details', 'SQL Functions': '✅ QUERY_ID level', 'REST API': 'ℹ️ Not available'},
-            {'Feature': 'User attribution', 'SQL Functions': '✅ via QUERY_HISTORY join', 'REST API': 'ℹ️ Not available'},
-            {'Feature': 'Historical trend analysis', 'SQL Functions': '✅ Full detail', 'REST API': '✅ totals via metering'}
+            {'Feature': 'Total AI services credits', 'SQL Functions': 'Yes (metering validation)', 'REST API': 'Yes (metering validation)'},
+            {'Feature': 'Function & model breakdown', 'SQL Functions': 'Yes (CORTEX_AISQL_USAGE_HISTORY)', 'REST API': 'Limited'},
+            {'Feature': 'Per-query details', 'SQL Functions': 'Yes (QUERY_ID level)', 'REST API': 'Not available'},
+            {'Feature': 'User attribution', 'SQL Functions': 'Yes (QUERY_HISTORY join)', 'REST API': 'Not available'},
+            {'Feature': 'Historical trend analysis', 'SQL Functions': 'Yes (full detail)', 'REST API': 'Yes (metering totals)'}
         ])
         
         st.dataframe(comparison_data, use_container_width=True, hide_index=True)
@@ -1546,11 +1559,11 @@ def show_cost_projections(df, credit_cost, variance_pct):
         st.markdown("""
         **Impact on Your Cost Analysis:**
         
-        ✅ **Good News:** For SQL-based usage, this calculator provides high-detail attribution and projections because:
+        **Good news:** for SQL-based usage, this calculator provides high-detail attribution and projections because:
         - `CORTEX_AISQL_USAGE_HISTORY` provides query/function/model/token/credit telemetry for AI Functions used in SQL
         - User attribution is computed by joining `QUERY_ID` to `QUERY_HISTORY`
         
-        ℹ️ **REST API usage:** Granular per-request/per-query attribution is not available in `ACCOUNT_USAGE`.
+        **REST API usage:** granular per-request/per-query attribution is not available in `ACCOUNT_USAGE`.
         Use `V_METERING_AI_SERVICES` to validate total credits and detect gaps if REST API usage is significant.
         
         **Bottom line:** Use the detailed tabs for SQL telemetry, and use metering to validate total AI services spend.
@@ -1559,7 +1572,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # ========================================================================
     # Cost per User Calculator - MOVED TO TOP
     # ========================================================================
-    st.subheader("💰 Cost per User Calculator")
+    st.subheader("Cost per User Calculator")
     st.markdown("**Estimate per-user costs based on usage patterns**")
     
     show_cost_per_user_calculator(df, credit_cost)
@@ -1570,7 +1583,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
     # ========================================================================
     # Growth-Based Cost Projections
     # ========================================================================
-    st.header("📈 Growth-Based Cost Projections")
+    st.header("Growth-Based Cost Projections")
     
     col1, col2 = st.columns(2)
     
@@ -1611,7 +1624,7 @@ def show_cost_projections(df, credit_cost, variance_pct):
     with col3:
         st.metric("Total Year Cost", format_currency(total_year_cost))
     with col4:
-        variance_range = f"±{format_currency(total_year_cost * variance_pct)}"
+        variance_range = f"+/-{format_currency(total_year_cost * variance_pct)}"
         st.metric("Variance Range", variance_range)
     
     st.divider()
@@ -1704,16 +1717,16 @@ def show_cost_per_user_calculator(df, credit_cost):
     # ========================================================================
     # Historical Usage Reference Table - MOVED TO TOP AS GUIDE
     # ========================================================================
-    st.markdown("#### 📊 Historical Usage Reference (from your data)")
+    st.markdown("#### Historical Usage Reference (from your data)")
     st.caption("Use these metrics as a guide for your cost estimates below")
     
     # Debug expander to show raw data and accuracy checks
-    with st.expander("🔍 Debug: View Raw Data & Accuracy Checks", expanded=False):
-        st.markdown("**📊 Latest Aggregated Data:**")
+    with st.expander("Debug: View Raw Data and Accuracy Checks", expanded=False):
+        st.markdown("**Latest Aggregated Data:**")
         st.dataframe(latest_30d, use_container_width=True)
         
         st.markdown("---")
-        st.markdown("**✅ Accuracy Validation Checks:**")
+        st.markdown("**Accuracy Validation Checks:**")
         
         # Check 1: Cortex Analyst rate validation
         analyst_data = latest_30d[latest_30d['SERVICE_TYPE'] == 'Cortex Analyst']
@@ -1723,37 +1736,43 @@ def show_cost_per_user_calculator(df, credit_cost):
             rate_diff_pct = abs((analyst_rate - expected_rate) / expected_rate * 100)
             
             if rate_diff_pct < 5:
-                st.success(f"✅ Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%)")
+                st.success(f"Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%)")
             elif rate_diff_pct < 20:
-                st.warning(f"⚠️ Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%) - Within acceptable range")
+                st.warning(
+                    f"Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%) "
+                    "- Within acceptable range"
+                )
             else:
-                st.error(f"❌ Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%) - Significant deviation!")
+                st.error(
+                    f"Cortex Analyst: {analyst_rate:.4f} credits/msg (Expected: {expected_rate}, Diff: {rate_diff_pct:.1f}%) "
+                    "- Significant deviation"
+                )
         
         # Check 2: Verify no division by zero issues
         zero_ops = latest_30d[latest_30d['TOTAL_OPERATIONS'] == 0]
         if not zero_ops.empty:
-            st.error(f"❌ Found {len(zero_ops)} service(s) with 0 operations: {', '.join(zero_ops['SERVICE_TYPE'].tolist())}")
+            st.error(f"Found {len(zero_ops)} service(s) with 0 operations: {', '.join(zero_ops['SERVICE_TYPE'].tolist())}")
         else:
-            st.success("✅ All services have non-zero operations")
+            st.success("All services have non-zero operations")
         
         # Check 3: Verify cost per request is reasonable
         unreasonable_costs = latest_30d[latest_30d['cost_per_request'] > 10]  # Flag if >$10 per request
         if not unreasonable_costs.empty:
-            st.warning(f"⚠️ Unusually high cost per request detected for: {', '.join(unreasonable_costs['SERVICE_TYPE'].tolist())}")
+            st.warning(f"Unusually high cost per request detected for: {', '.join(unreasonable_costs['SERVICE_TYPE'].tolist())}")
         else:
-            st.success("✅ All cost per request values are in reasonable range")
+            st.success("All cost per request values are in a reasonable range")
         
         # Check 4: Data completeness
-        st.markdown("**📅 Data Completeness:**")
+        st.markdown("**Data Completeness:**")
         for _, row in latest_30d.iterrows():
             days_pct = (row['days_with_data'] / 30) * 100
             if days_pct < 30:
-                st.warning(f"⚠️ {row['SERVICE_TYPE']}: Only {row['days_with_data']} days of data ({days_pct:.0f}% of 30 days)")
+                st.warning(f"{row['SERVICE_TYPE']}: Only {row['days_with_data']} days of data ({days_pct:.0f}% of 30 days)")
             else:
-                st.info(f"ℹ️ {row['SERVICE_TYPE']}: {row['days_with_data']} days of data ({days_pct:.0f}% coverage)")
+                st.info(f"{row['SERVICE_TYPE']}: {row['days_with_data']} days of data ({days_pct:.0f}% coverage)")
         
         st.markdown("---")
-        st.markdown("**📋 Raw Input Data (Last 10 Rows):**")
+        st.markdown("**Raw Input Data (Last 10 Rows):**")
         st.dataframe(df.tail(10), use_container_width=True)
     
     reference_table = []
@@ -1774,7 +1793,7 @@ def show_cost_per_user_calculator(df, credit_cost):
     # ========================================================================
     # User Persona Configuration
     # ========================================================================
-    st.markdown("#### 👤 Define User Personas and Estimate Costs")
+    st.markdown("#### Define User Personas and Estimate Costs")
     
     # Initialize session state for user personas if not exists
     if 'user_personas_simple' not in st.session_state:
@@ -1817,7 +1836,7 @@ def show_cost_per_user_calculator(df, credit_cost):
         
         with col4:
             if len(st.session_state.user_personas_simple) > 1:
-                if st.button("🗑️", key=f"simple_remove_{idx}", help="Remove"):
+                if st.button("Remove", key=f"simple_remove_{idx}", help="Remove"):
                     personas_to_remove.append(idx)
     
     # Remove personas marked for deletion
@@ -1826,7 +1845,7 @@ def show_cost_per_user_calculator(df, credit_cost):
         st.rerun()
     
     # Add new persona button
-    if st.button("➕ Add Another Persona"):
+    if st.button("Add Another Persona"):
         st.session_state.user_personas_simple.append({
             'name': f'User Type {len(st.session_state.user_personas_simple) + 1}',
             'count': 10,
@@ -1839,7 +1858,7 @@ def show_cost_per_user_calculator(df, credit_cost):
     # ========================================================================
     # Calculate Costs per Persona
     # ========================================================================
-    st.markdown("#### 💵 Cost Estimates by Persona")
+    st.markdown("#### Cost Estimates by Persona")
     
     # Add toggle for rate source
     use_official_rates = st.checkbox(
@@ -1852,7 +1871,7 @@ def show_cost_per_user_calculator(df, credit_cost):
     if use_official_rates:
         # Use official rate: 0.067 credits per message * credit_cost
         avg_cost_per_request = 0.067 * credit_cost
-        st.info(f"📋 Using official rate: 0.067 credits/message = ${avg_cost_per_request:.6f} per request")
+        st.info(f"Using official rate: 0.067 credits/message = ${avg_cost_per_request:.6f} per request")
     else:
         # Calculate weighted average cost per request across all services from actual data
         total_ops = latest_30d['requests_per_day'].sum() * 30  # Monthly operations
@@ -1861,7 +1880,7 @@ def show_cost_per_user_calculator(df, credit_cost):
             for _, row in latest_30d.iterrows()
         )
         avg_cost_per_request = total_cost_30d / total_ops if total_ops > 0 else 0
-        st.info(f"📊 Using actual observed rate from your data: ${avg_cost_per_request:.6f} per request")
+        st.info(f"Using observed rate from your data: ${avg_cost_per_request:.6f} per request")
     
     # Calculate costs for each persona
     persona_results = []
@@ -1910,10 +1929,10 @@ def show_cost_per_user_calculator(df, credit_cost):
     
     # Quick accuracy check reminder
     st.info(f"""
-    💡 **Quick Accuracy Check:**
+    **Quick Accuracy Check:**
     - **Cortex Analyst** (Official Rate): 0.067 credits per message = ${0.067 * credit_cost:.4f} per request at ${credit_cost:.2f}/credit
-    - **Manual verification**: Total Monthly Cost = Total Users × Requests/Day × 30 days × Cost/Request
-    - **Toggle the checkbox above** to compare actual rates vs official Snowflake rates
+    - **Manual verification**: Total Monthly Cost = Total Users x Requests/Day x 30 days x Cost/Request
+    - **Toggle the checkbox above** to compare observed rates vs official Snowflake rates
     - **Open the Debug expander** at the top to see detailed validation checks
     
     **Official Rates (Oct 31, 2025):**
@@ -1928,7 +1947,7 @@ def show_summary_report(df, credit_cost, variance_pct):
     st.header("Executive Summary Report")
     
     # Historical summary
-    st.markdown("## 📊 Current State")
+    st.markdown("## Current State")
     
     total_credits = df['TOTAL_CREDITS'].sum()
     total_cost = total_credits * credit_cost
@@ -1954,7 +1973,7 @@ def show_summary_report(df, credit_cost, variance_pct):
     st.divider()
     
     # Projection
-    st.markdown("## 🔮 12-Month Projection (25% Growth)")
+    st.markdown("## 12-Month Projection (25% Growth)")
     
     projection_df = calculate_growth_projection(df, 0.25, 12, credit_cost)
     monthly_totals = projection_df.groupby('month')['projected_cost_usd'].sum()
@@ -1968,7 +1987,7 @@ def show_summary_report(df, credit_cost, variance_pct):
     with col2:
         lower = total_year_cost * (1 - variance_pct)
         upper = total_year_cost * (1 + variance_pct)
-        st.metric(f"Range (±{variance_pct*100:.0f}%)", f"{format_currency(lower)} - {format_currency(upper)}")
+        st.metric(f"Range (+/-{variance_pct*100:.0f}%)", f"{format_currency(lower)} - {format_currency(upper)}")
     
     with col3:
         avg_monthly = total_year_cost / 12
@@ -1977,7 +1996,7 @@ def show_summary_report(df, credit_cost, variance_pct):
     st.divider()
     
     # Service breakdown
-    st.markdown("## 💼 Service Breakdown")
+    st.markdown("## Service Breakdown")
     
     service_agg = df.groupby('SERVICE_TYPE').agg({
         'TOTAL_CREDITS': 'sum',
@@ -2001,7 +2020,7 @@ def show_summary_report(df, credit_cost, variance_pct):
     
     # Export options
     st.divider()
-    st.markdown("## 📥 Export Data")
+    st.markdown("## Export Data")
     
     csv = df.to_csv(index=False)
     st.download_button(

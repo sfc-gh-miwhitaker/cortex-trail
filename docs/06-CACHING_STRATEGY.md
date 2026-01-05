@@ -2,7 +2,7 @@
 
 **Project:** Cortex Cost Calculator  
 **Version:** 3.0  
-**Last Updated:** 2025-01-05
+**Last Updated:** 2026-01-05
 
 ---
 
@@ -49,7 +49,7 @@ All data-fetching functions use Streamlit's `@st.cache_data` decorator with a 5-
 
 ### Manual Refresh
 Users can force immediate cache clear:
-1. Click **"🔄 Refresh Data"** button in sidebar
+1. Click **"Refresh Data"** button in sidebar
 2. All caches cleared instantly
 3. App reruns with fresh data
 
@@ -72,8 +72,8 @@ Streamlit automatically creates cache keys based on:
 
 ### Messages
 ```python
-st.success(f"✅ Loaded {len(df)} rows from snapshot table (optimized for speed)")
-st.info(f"ℹ️ Loaded {len(df)} rows from live views")
+st.success(f"Loaded {len(df)} rows from snapshot table (optimized for speed)")
+st.info(f"Loaded {len(df)} rows from live views")
 ```
 
 ---
@@ -154,23 +154,23 @@ def fetch_data_from_views(lookback_days=30):
 ## Best Practices
 
 ### For Users
-✅ **DO:**
+**DO:**
 - Use default 5-minute cache for normal analysis
 - Click "Refresh Data" when you need latest data
 - Note the "Last Refreshed" timestamp
 
-❌ **DON'T:**
+**DON'T:**
 - Expect real-time data (ACCOUNT_USAGE has latency)
 - Refresh excessively (increases warehouse costs)
 
 ### For Developers
-✅ **DO:**
+**DO:**
 - Cache all Snowflake queries
 - Use consistent TTL across similar functions
 - Show cache status to users
 - Provide manual refresh option
 
-❌ **DON'T:**
+**DON'T:**
 - Cache user inputs or UI state
 - Use TTL < 60 seconds (too many queries)
 - Cache data with PII without encryption
@@ -208,7 +208,6 @@ Cache is cleared when:
 2. **Cache warming** on app start
 3. **Partial cache invalidation** (per-service)
 4. **Cache analytics** dashboard
-5. **Persistent caching** across sessions (Redis)
 
 ### Monitoring
 Consider adding:
@@ -220,7 +219,7 @@ def fetch_data_from_views(lookback_days=30):
     start_time = time.time()
     # ... fetch data ...
     duration = time.time() - start_time
-    st.caption(f"⏱️ Query took {duration:.2f}s")
+    st.caption(f"Query took {duration:.2f}s")
 ```
 
 ---
@@ -229,4 +228,4 @@ def fetch_data_from_views(lookback_days=30):
 
 - [Streamlit Caching Documentation](https://docs.streamlit.io/library/advanced-features/caching)
 - [Snowflake ACCOUNT_USAGE Latency](https://docs.snowflake.com/en/sql-reference/account-usage#label-account-usage-views)
-- Project README: `docs/README.md`
+- Project README: `README.md`

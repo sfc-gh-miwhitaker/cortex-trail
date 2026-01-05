@@ -11,7 +11,7 @@ This directory contains screenshots and visual assets for the Cortex Cost Calcul
 
 **To capture:**
 1. Deploy the Streamlit app via `deploy_all.sql`
-2. Open the app in Snowsight: Projects → Streamlit → CORTEX_COST_CALCULATOR
+2. Open the app in Snowsight: Projects -> Streamlit -> CORTEX_COST_CALCULATOR
 3. Navigate to the Historical Analysis tab with data loaded
 4. Take screenshot showing:
    - Service breakdown chart

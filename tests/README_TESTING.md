@@ -2,8 +2,8 @@
 
 **Project:** Cortex Cost Calculator  
 **Version:** 3.0  
-**Last Updated:** 2025-01-05  
-**Expires:** 2026-07-05
+**Last Updated:** 2026-01-05  
+**Expires:** 2026-02-04
 
 ---
 
@@ -21,10 +21,10 @@ This guide explains how to test the Cortex Cost Calculator to ensure correct dep
 
 ```
 tests/
-├── test_sql_views.sql           # SQL view validation tests
-├── test_data_quality.sql        # Data quality and integrity tests
-├── test_streamlit_calcs.py      # Python unit tests
-└── README_TESTING.md            # This file
+- test_sql_views.sql           # SQL view validation tests
+- test_data_quality.sql        # Data quality and integrity tests
+- test_streamlit_calcs.py      # Python unit tests
+- README_TESTING.md            # This file
 ```
 
 ---
@@ -47,47 +47,41 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 ### What's Tested
 
 #### Compilation Tests (4 tests)
-- ✅ All views can be queried without errors
-- ✅ Views return data or handle empty results gracefully
+- All views can be queried without errors
+- Views return data or handle empty results gracefully
 
 #### Data Quality Tests (4 tests)
-- ✅ No NULL values in required columns
-- ✅ No negative credits
-- ✅ Dates within valid ranges
-- ✅ No duplicate date-service combinations
+- No NULL values in required columns
+- No negative credits
+- Dates within valid ranges
+- No duplicate date-service combinations
 
 #### Business Logic Tests (2 tests)
-- ✅ credits_per_user calculations are accurate
-- ✅ Anomaly alert levels correctly assigned
-
-#### Configuration Tests (2 tests)
-- ✅ Configuration table populated
-- ✅ GET_CONFIG function operational
+- credits_per_user calculations are accurate
 
 #### Performance Tests (2 tests)
-- ✅ V_CORTEX_DAILY_SUMMARY queries under 5 seconds
-- ✅ V_COST_ANOMALIES queries under 10 seconds
+- V_CORTEX_DAILY_SUMMARY queries under 5 seconds
 
 ### Expected Output
 
 ```
-╔═══════════════════════════════════════════════════════════════════╗
-║               CORTEX COST CALCULATOR - TEST RESULTS              ║
-╚═══════════════════════════════════════════════════════════════════╝
++-------------------------------------------------------------------+
+|               CORTEX COST CALCULATOR - TEST RESULTS              |
++-------------------------------------------------------------------+
 
 TEST_NUMBER | TEST_CATEGORY  | TEST_NAME                     | TEST_STATUS | ...
 1           | Compilation    | V_CORTEX_ANALYST_DETAIL ...   | PASS        | ...
 2           | Compilation    | V_CORTEX_SEARCH_DETAIL ...    | PASS        | ...
 ...
 
-═══════════════════ TEST SUMMARY ═══════════════════
+------------------- TEST SUMMARY -------------------
 TEST_CATEGORY  | TOTAL_TESTS | PASSED | FAILED | WARNINGS
 Compilation    | 4           | 4      | 0      | 0
 Data Quality   | 4           | 4      | 0      | 0
 Business Logic | 2           | 2      | 0      | 0
 ...
 
-✅ ALL TESTS PASSED - Deployment validated successfully!
+ALL TESTS PASSED - Deployment validated successfully
 ```
 
 ### Troubleshooting Failed Tests
@@ -151,14 +145,14 @@ The test generates an overall quality score (0-100):
 
 ```
 COMPLETENESS_SCORE | ACCURACY_SCORE | VALIDITY_SCORE | CONSISTENCY_SCORE | OVERALL | RATING
-98.5               | 100.0          | 100.0          | 100.0             | 99.6    | ✅ EXCELLENT
+98.5               | 100.0          | 100.0          | 100.0             | 99.6    | EXCELLENT
 ```
 
 **Rating Scale:**
-- **90-100:** ✅ EXCELLENT - Production ready
-- **75-89:** ✅ GOOD - Minor issues, acceptable
-- **60-74:** ⚠️ FAIR - Investigate issues
-- **< 60:** ❌ POOR - Critical issues, do not deploy
+- **90-100:** EXCELLENT - Production ready
+- **75-89:** GOOD - Minor issues, acceptable
+- **60-74:** FAIR - Investigate issues
+- **< 60:** POOR - Critical issues, do not deploy
 
 ### Interpreting Results
 
@@ -306,9 +300,9 @@ AS
 ALTER TASK TASK_DAILY_TEST_SUITE RESUME;
 ```
 
-#### Using CI/CD Pipeline
+#### Using CI/CD Pipeline (Optional)
 
-See `.github/workflows/test-sql.yml` for GitHub Actions integration.
+If you add CI for this repo, keep it non-interactive and run the Python unit tests (`tests/test_streamlit_calcs.py`) plus any SQL lint/static checks you use internally.
 
 ---
 
@@ -406,18 +400,18 @@ All tests must include:
 ## 7. Best Practices
 
 ### DO:
-✅ Run all tests after deployment  
-✅ Test in dev/sandbox environment first  
-✅ Document test failures with screenshots  
-✅ Keep tests fast (< 1 minute total)  
-✅ Use descriptive test names  
+- Run all tests after deployment  
+- Test in dev/sandbox environment first  
+- Document test failures with screenshots  
+- Keep tests fast (< 1 minute total)  
+- Use descriptive test names  
 
 ### DON'T:
-❌ Skip tests because "it should work"  
-❌ Test in production directly  
-❌ Ignore warnings  
-❌ Hardcode sensitive data in tests  
-❌ Leave failing tests in codebase  
+- Skip tests because "it should work"  
+- Test in production directly  
+- Ignore warnings  
+- Hardcode sensitive data in tests  
+- Leave failing tests in codebase  
 
 ---
 

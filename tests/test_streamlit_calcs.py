@@ -4,8 +4,8 @@ Cortex Cost Calculator - Python Unit Tests
 Tests for calculation functions, projection formulas, and data transformations.
 
 Author: SE Community
-Created: 2025-01-05
-Expires: 2026-07-05
+Created: 2026-01-05
+Expires: 2026-02-04
 """
 
 import unittest

@@ -6,7 +6,7 @@
  *   Designed for Solution Engineer two-account workflow.
  * 
  * WORKFLOW:
- *   Customer Account → Run export → Download CSV → Your Account → Upload to calculator
+ *   Customer Account -> Run export -> Download CSV -> Your Account -> Upload to calculator
  * 
  * PREREQUISITES:
  *   - Monitoring views deployed (sql/01_deployment/deploy_cortex_monitoring.sql)
@@ -15,7 +15,7 @@
  * 
  * USAGE:
  *   1. Run query in CUSTOMER'S Snowflake account
- *   2. Click "Download" → Save as CSV
+ *   2. Click "Download" -> Save as CSV
  *   3. Upload CSV to YOUR Streamlit calculator
  *   4. Calculator generates credit projections
  *   5. Export summary for sales/pricing team
@@ -162,12 +162,12 @@ ORDER BY date DESC, total_credits DESC;
 -- ----------------------
 -- STEP 1: Run your chosen extraction query (Option 1, 2, or 3 above)
 -- STEP 2: Verify data returned (if no data, see Troubleshooting below)
--- STEP 3: Click "Download" → Select "CSV" format
+-- STEP 3: Click "Download" -> Select "CSV" format
 -- STEP 4: Save as: customer_name_cortex_usage_YYYYMMDD.csv
 -- 
 -- IN YOUR ACCOUNT:
 -- ----------------
--- STEP 5: Open YOUR Streamlit calculator (Projects → Streamlit)
+-- STEP 5: Open YOUR Streamlit calculator (Projects -> Streamlit)
 -- STEP 6: Select "Upload Customer CSV" data source
 -- STEP 7: Upload the CSV file downloaded from customer
 -- 

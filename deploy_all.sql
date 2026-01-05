@@ -2,22 +2,22 @@
  * DEMO PROJECT: Cortex Cost Calculator - Git-Integrated Deployment
  * 
  * AUTHOR: SE Community
- * CREATED: 2025-11-25
- * EXPIRES: 2026-07-05 (180 days)
+ * CREATED: 2026-01-05
+ * EXPIRES: 2026-02-04 (30 days)
  * 
- * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2026-07-05
- * ⚠️  NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
+ * DEMONSTRATION PROJECT - EXPIRES: 2026-02-04
+ * NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
  * 
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
  *   1. Copy this ENTIRE script
- *   2. Open Snowsight → New Worksheet
+ *   2. Open Snowsight -> New Worksheet
  *   3. Paste the script
  *   4. Click "Run All"
  *   5. Wait ~2 minutes for complete deployment
  * 
  * PURPOSE:
  *   Single-script deployment leveraging Snowflake native Git integration.
- *   Creates API Integration → Git Repository → Executes SQL from Git → 
+ *   Creates API Integration -> Git Repository -> Executes SQL from Git -> 
  *   Deploys Streamlit from Git.
  * 
  * OBJECTS CREATED:
@@ -52,32 +52,40 @@
  *   Run sql/99_cleanup/cleanup_all.sql for complete removal
  * 
  * VERSION: 3.0 (Updated LLM model pricing, deprecation warnings)
- * LAST UPDATED: 2025-12-02
+ * LAST UPDATED: 2026-01-05
  ******************************************************************************/
 
 -- ===========================================================================
 -- EXPIRATION CHECK (MANDATORY)
 -- ===========================================================================
 -- This demo expires 30 days after creation.
--- If expired, deployment should be halted and the repository forked with updated dates.
--- Expiration date: 2026-07-05
+-- If expired, deployment is halted. Fork the repository and refresh the dates and syntax.
+-- Expiration date: 2026-02-04
+
+-- Hard stop if expired (Snowflake Scripting)
+DECLARE
+    demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
+    expiration_date DATE := '2026-02-04'::DATE;
+BEGIN
+    IF (CURRENT_DATE() > expiration_date) THEN
+        RAISE demo_expired;
+    END IF;
+END;
 
 -- Display expiration status (review result before proceeding)
 SELECT 
-    '2026-07-05'::DATE AS expiration_date,
+    '2026-02-04'::DATE AS expiration_date,
     CURRENT_DATE() AS current_date,
-    DATEDIFF('day', CURRENT_DATE(), '2026-07-05'::DATE) AS days_remaining,
+    DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) AS days_remaining,
     CASE 
-        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-07-05'::DATE) < 0 
-        THEN '🚫 EXPIRED - Do not deploy. Fork repository and update expiration date.'
-        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-07-05'::DATE) <= 7
-        THEN '⚠️ EXPIRING SOON - ' || DATEDIFF('day', CURRENT_DATE(), '2026-07-05'::DATE) || ' days remaining'
-        ELSE '✅ ACTIVE - ' || DATEDIFF('day', CURRENT_DATE(), '2026-07-05'::DATE) || ' days remaining'
+        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) < 0 
+        THEN 'EXPIRED - Do not deploy. Fork repository and update expiration date.'
+        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) <= 7
+        THEN 'EXPIRING SOON - ' || DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) || ' days remaining'
+        ELSE 'ACTIVE - ' || DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) || ' days remaining'
     END AS demo_status;
 
--- ⚠️  MANUAL CHECK REQUIRED:
--- If the demo_status shows "EXPIRED", STOP HERE and do not proceed with deployment.
--- This demo uses Snowflake features current as of November 2025.
+-- This demo uses Snowflake features current as of December 2025.
 -- To use after expiration:
 --   1. Fork: https://github.com/sfc-gh-miwhitaker/cortex-trail
 --   2. Update expiration_date in this file
@@ -93,7 +101,7 @@ CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
     API_PROVIDER = git_https_api
     API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
     ENABLED = TRUE
-    COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2026-07-05';
+    COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2026-02-04';
 
 -- ===========================================================================
 -- STEP 2: CREATE DATABASE & SCHEMAS
@@ -103,10 +111,10 @@ CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
 -- Creates: CORTEX_USAGE schema (will be created by monitoring script)
 
 CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
-    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2026-07-05';
+    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2026-02-04';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.GIT_REPOS
-    COMMENT = 'DEMO: Shared schema for Git repository stages across demo projects | EXPIRES: 2026-07-05';
+    COMMENT = 'DEMO: Shared schema for Git repository stages across demo projects | EXPIRES: 2026-02-04';
 
 -- Set context for Git repository creation
 USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
@@ -120,7 +128,7 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
 CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO
     API_INTEGRATION = SFE_CORTEX_TRAIL_GIT_API
     ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
-    COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2026-07-05';
+    COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2026-02-04';
 
 ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
 
@@ -138,7 +146,7 @@ EXECUTE IMMEDIATE FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branch
 -- ===========================================================================
 -- Creates: CORTEX_COST_CALCULATOR Streamlit app
 -- Location: SNOWFLAKE_EXAMPLE.CORTEX_USAGE
--- Source: Git repository (live-linked, auto-updates on fetch)
+-- Source: Git repository (copied at deploy time; update with ALTER STREAMLIT ... PULL after a FETCH)
 -- Note: Uses COMPUTE_WH as default. Change to your warehouse if different.
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
@@ -151,7 +159,10 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATO
     MAIN_FILE = 'streamlit_app.py'
     QUERY_WAREHOUSE = $streamlit_warehouse
     TITLE = 'Cortex Cost Calculator'
-    COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2026-07-05';
+    COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2026-02-04';
+
+-- Ensure the app has a live version (avoids requiring an owner to open the app once in Snowsight)
+ALTER STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR ADD LIVE VERSION FROM LAST;
 
 -- ===========================================================================
 -- DEPLOYMENT COMPLETE
@@ -173,7 +184,7 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATO
 --
 -- Next Steps:
 --   1. Access app: Snowsight -> Projects -> Streamlit -> CORTEX_COST_CALCULATOR
---   2. Query views: SELECT * FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY LIMIT 10
+--   2. Query views: SELECT usage_date, service_type, daily_unique_users, total_operations, total_credits FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY ORDER BY usage_date DESC LIMIT 10
 --   3. Monitor task: Task runs daily at 3:00 AM Pacific
 --
 -- Cleanup:

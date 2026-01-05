@@ -10,11 +10,11 @@
 
 AI_TRANSLATE is the enhanced successor to TRANSLATE (SNOWFLAKE.CORTEX), offering:
 
-- ✅ **20% cost savings** - Fewer input tokens for typical sentences
-- ✅ **Enhanced quality** - Industry-leading accuracy in all language directions
-- ✅ **23 supported languages** - Including 9 new languages (Hebrew, Greek, Turkish, Finnish, Arabic, Croatian, Czech, Romanian, Norwegian)
-- ✅ **Better auto-detection** - Recognizes when text is already in target language
-- ✅ **Mixed language support** - Handles "Spanglish" and other mixed-language text
+- **20% cost savings**: fewer input tokens for typical sentences
+- **Enhanced quality**: industry-leading accuracy in all language directions
+- **23 supported languages**: including 9 new languages (Hebrew, Greek, Turkish, Finnish, Arabic, Croatian, Czech, Romanian, Norwegian)
+- **Better auto-detection**: recognizes when text is already in target language
+- **Mixed language support**: handles "Spanglish" and other mixed-language text
 
 **Documentation:** [Snowflake AI_TRANSLATE Reference](https://docs.snowflake.com/en/sql-reference/functions/ai_translate)
 
@@ -96,7 +96,9 @@ If you're sharing Cortex usage reports with international teams, translate servi
 
 ```sql
 -- Create multilingual service type reference
-CREATE OR REPLACE VIEW V_SERVICE_TYPES_MULTILINGUAL AS
+CREATE OR REPLACE VIEW SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_SERVICE_TYPES_MULTILINGUAL
+    COMMENT = 'DEMO: cortex-trail - Multilingual service type names via AI_TRANSLATE | EXPIRES: 2026-02-04'
+AS
 SELECT 
     service_type AS service_type_en,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'es') AS service_type_es,
@@ -109,7 +111,13 @@ FROM (
 );
 
 -- Query results
-SELECT * FROM V_SERVICE_TYPES_MULTILINGUAL;
+SELECT
+    service_type_en,
+    service_type_es,
+    service_type_fr,
+    service_type_de,
+    service_type_ja
+FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_SERVICE_TYPES_MULTILINGUAL;
 ```
 
 **Example Output:**
@@ -203,12 +211,12 @@ SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(
 
 **Cost Savings:**
 - 20% reduction in tokens = 20% cost reduction
-- For 1 million translations/month: $600 → $480 (saves $120/month)
+- For 1 million translations/month: $600 -> $480 (saves $120/month)
 - Compounds with improved quality (fewer retries needed)
 
 ---
 
-## Migration Guide: TRANSLATE → AI_TRANSLATE
+## Migration Guide: TRANSLATE -> AI_TRANSLATE
 
 ### Find All Usage
 
@@ -262,10 +270,10 @@ FROM customer_feedback;
 ### 1. Use Auto-Detection When Source is Unknown
 
 ```sql
--- ✅ GOOD: Let AI_TRANSLATE detect language
+-- GOOD: Let AI_TRANSLATE detect language
 SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(user_comment, '', 'en') AS comment_english;
 
--- ❌ AVOID: Guessing wrong source language wastes tokens
+-- AVOID: Guessing wrong source language wastes tokens
 SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(user_comment, 'es', 'en') AS comment_english;
 -- (If user_comment is actually French, result will be poor)
 ```
@@ -273,7 +281,7 @@ SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(user_comment, 'es', 'en') AS comment_englis
 ### 2. Batch Translations for Efficiency
 
 ```sql
--- ✅ GOOD: Batch multiple translations in single query
+-- GOOD: Batch multiple translations in single query
 SELECT 
     feedback_id,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(feedback_text, 'en', 'es') AS feedback_es,
@@ -281,7 +289,7 @@ SELECT
     SNOWFLAKE.CORTEX.AI_TRANSLATE(feedback_text, 'en', 'de') AS feedback_de
 FROM customer_feedback;
 
--- ❌ AVOID: Separate queries (more overhead)
+-- AVOID: Separate queries (more overhead)
 -- Query 1: Spanish only
 -- Query 2: French only  
 -- Query 3: German only
@@ -290,15 +298,18 @@ FROM customer_feedback;
 ### 3. Cache Translations for Static Content
 
 ```sql
--- ✅ GOOD: Translate once, store in table
+-- GOOD: Translate once, store in table
 CREATE TABLE service_type_translations AS
 SELECT 
     service_type,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'es') AS service_type_es,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'fr') AS service_type_fr
-FROM (SELECT DISTINCT service_type FROM v_cortex_daily_summary);
+FROM (
+    SELECT DISTINCT service_type
+    FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY
+);
 
--- ❌ AVOID: Re-translating same text repeatedly
+-- AVOID: Re-translating same text repeatedly
 SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE('Cortex Analyst', 'en', 'es')
 FROM large_table;  -- Translates same text millions of times!
 ```
@@ -306,7 +317,7 @@ FROM large_table;  -- Translates same text millions of times!
 ### 4. Leverage Mixed Language Support
 
 ```sql
--- ✅ GOOD: Handle mixed-language customer feedback
+-- GOOD: Handle mixed-language customer feedback
 SELECT 
     customer_id,
     original_text,
@@ -370,10 +381,10 @@ ORDER BY 1 DESC;
 **Solution:** Use auto-detection instead of specifying source language
 
 ```sql
--- ❌ Poor quality (wrong source language specified)
+-- AVOID: Poor quality (wrong source language specified)
 SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(text, 'es', 'en');  -- Text is actually Portuguese
 
--- ✅ Better quality (auto-detect)
+-- BETTER: Auto-detect source language
 SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(text, '', 'en');
 ```
 
@@ -442,11 +453,11 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_COST_EXPORT;
 ## Summary
 
 **Key Takeaways:**
-- ✅ AI_TRANSLATE offers 20% cost savings over legacy TRANSLATE
-- ✅ Supports 23 languages with enhanced quality
-- ✅ Auto-detection handles mixed languages (Spanglish, etc.)
-- ✅ Drop-in replacement: Change function name, same parameters
-- ✅ Ideal for multilingual reports, customer feedback, and documentation
+- AI_TRANSLATE offers 20% cost savings over legacy TRANSLATE
+- Supports 23 languages with enhanced quality
+- Auto-detection handles mixed languages (Spanglish, etc.)
+- Drop-in replacement: change function name, same parameters
+- Ideal for multilingual reports, customer feedback, and documentation
 
 **Next Steps:**
 1. Identify current TRANSLATE usage in your code

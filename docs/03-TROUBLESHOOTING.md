@@ -41,7 +41,7 @@ CREATE SCHEMA IF NOT EXISTS CORTEX_USAGE;
 ### Issue: Views Not Created
 
 **Symptoms:**
-- SHOW VIEWS returns fewer than 9 views
+- SHOW VIEWS returns fewer than 21 views
 - Some views missing
 
 **Diagnosis:**
@@ -265,8 +265,8 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.DOCUMENT_AI_USAGE_HISTORY;
 **Cause:** Some ACCOUNT_USAGE views don't include user-level detail.
 
 **Expected Behavior:**
-- ✅ User tracking: Analyst, Functions (query-level), Document AI
-- ❌ No user tracking: Search (service-level aggregates only)
+- User tracking: Analyst, Functions (query-level), Document AI
+- No user tracking: Search (service-level aggregates only)
 
 **Solution:**
 ```sql
@@ -627,11 +627,11 @@ ORDER BY start_time DESC;
 
 ### Before Contacting Support
 
-1. ✅ Review this troubleshooting guide
-2. ✅ Check Snowflake documentation
-3. ✅ Verify permissions and access
-4. ✅ Test in sandbox/dev environment
-5. ✅ Gather error messages and query IDs
+1. Review this troubleshooting guide
+2. Check Snowflake documentation
+3. Verify permissions and access
+4. Test in sandbox/dev environment
+5. Gather error messages and query IDs
 
 ### Information to Provide
 

@@ -1,16 +1,16 @@
 ![Reference Implementation](https://img.shields.io/badge/Reference-Implementation-blue)
 ![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
-![Expires](https://img.shields.io/badge/Expires-2026--07--05-green)
+![Expires](https://img.shields.io/badge/Expires-2026--02--04-orange)
 
 # Snowflake Cortex Cost Calculator v2.9
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2026-07-05**  
-> This demo uses Snowflake features current as of November 2025.  
+> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**  
+> This demo uses Snowflake features current as of December 2025.  
 > After expiration, this repository will be archived and made private.
 
 **Author:** SE Community  
 **Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting  
-**Created:** 2025-11-25 | **Expires:** 2026-07-05 (180 days) | **Status:** ACTIVE
+**Created:** 2026-01-05 | **Expires:** 2026-02-04 (30 days) | **Status:** ACTIVE
 
 ---
 
@@ -20,12 +20,12 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 ---
 
-## 👋 First Time Here?
+## First Time Here?
 
 **Follow these steps in order:**
 
-1. **Deploy Everything (Recommended):** [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight → Click "Run All" (~2 min)
-2. **Access Calculator:** Snowsight → Projects → Streamlit → CORTEX_COST_CALCULATOR
+1. **Deploy Everything (Recommended):** [`deploy_all.sql`](deploy_all.sql) - Copy/paste into Snowsight -> Click "Run All" (~2 min)
+2. **Access Calculator:** Snowsight -> Projects -> Streamlit -> CORTEX_COST_CALCULATOR
 3. **Export Metrics (Optional):** [`sql/02_utilities/export_metrics.sql`](sql/02_utilities/export_metrics.sql) - For two-account SE workflow
 
 **Total setup time: ~2 minutes**
@@ -36,7 +36,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 1. **Deploy Monitoring:** [`sql/01_deployment/deploy_cortex_monitoring.sql`](sql/01_deployment/deploy_cortex_monitoring.sql) (~1 min)
 2. **View Results:** Query views or continue to Streamlit deployment
-3. **Deploy Calculator:** See [Streamlit deployment section ↓](#deploy-streamlit-calculator) (~2 min)
+3. **Deploy Calculator:** See [Streamlit deployment section](#deploy-streamlit-calculator) (~2 min)
 
 **Total setup time: ~3-5 minutes**
 
@@ -50,15 +50,13 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 ---
 
-## 📸 Streamlit Calculator Preview
+## Streamlit Calculator Preview
 
-![Cortex Cost Calculator Screenshot](images/streamlit_screenshot.png)
-
-*Interactive cost calculator with historical analysis, projections, and per-user estimates*
+See `images/README.md` for optional screenshot instructions.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 **For Solution Engineers:** Deploy monitoring in customer accounts, extract usage data, and generate cost estimates in your own calculator.
 
@@ -69,26 +67,26 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 - **Per-Customer Analysis:** 5-10 minutes
 
 ### What You Get
-- ✅ **21 views** (monitoring + attribution + forecast)
-- ✅ **User spend attribution views** (Analyst + Functions + Document Processing) using `QUERY_HISTORY` joins
-- ✅ **ML-powered 12-month forecast** using `SNOWFLAKE.ML.FORECAST` (with automatic fallback if unavailable)
-- ✅ **Query-level cost tracking** - identify expensive queries
-- ✅ **Document processing analysis** - compare PARSE_DOCUMENT vs Document AI
-- ✅ **Fine-tuning ROI tracking** - separate training vs inference costs
-- ✅ **Cortex Search optimization** - hourly cost tracking to find idle periods
-- ✅ **Latest pricing** - Current rates for Cortex LLM models (15+ available)
-- ✅ **Serverless task** - automatic daily snapshots, no warehouse needed
-- ✅ **Snapshot table** - 4-5x faster queries
-- ✅ **Simplified Cost per User Calculator** for quick scoping
-- ✅ **30-day rolling totals** for accurate estimates
-- ✅ **Smart data fallback** - works immediately after deployment
-- ✅ **Historical trend analysis** with week-over-week growth
-- ✅ **Export-ready** credit estimates for proposals
-- ✅ **Zero disruption** to production workloads
+- **21 views** (monitoring + attribution + forecast)
+- **User spend attribution views** (Analyst + Functions + Document Processing) using `QUERY_HISTORY` joins
+- **ML-powered 12-month forecast** using `SNOWFLAKE.ML.FORECAST` (with automatic fallback if unavailable)
+- **Query-level cost tracking** - identify expensive queries
+- **Document processing analysis** - compare PARSE_DOCUMENT vs Document AI
+- **Fine-tuning ROI tracking** - separate training vs inference costs
+- **Cortex Search optimization** - hourly cost tracking to find idle periods
+- **Latest pricing** - Current rates for Cortex LLM models
+- **Serverless task** - automatic daily snapshots, no warehouse needed
+- **Snapshot table** - faster queries for longer lookbacks
+- **Simplified Cost per User Calculator** for quick scoping
+- **30-day rolling totals** for accurate estimates
+- **Smart data fallback** - works immediately after deployment
+- **Historical trend analysis** with week-over-week growth
+- **Export-ready** credit estimates for proposals
+- **Zero disruption** to production workloads
 
 ---
 
-## 📋 Table of Contents
+## Table of Contents
 
 - [Quick Start Guides](#quick-start-guides)
   - [For Solution Engineers](#for-solution-engineers)
@@ -111,25 +109,21 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 **The Two-Account Workflow**
 
 ```
-┌─────────────────────────────────────┐
-│  CUSTOMER'S SNOWFLAKE ACCOUNT       │
-│  Step 1: Deploy monitoring          │
-│  Step 2: Wait 7-14 days             │
-│  Step 3: Extract CSV                │
-└─────────────────────────────────────┘
-              ↓
-┌─────────────────────────────────────┐
-│  YOUR SNOWFLAKE ACCOUNT             │
-│  Step 4: Deploy calculator (once)   │
-│  Step 5: Upload customer CSV        │
-│  Step 6: Generate estimates         │
-│  Step 7: Export for sales team      │
-└─────────────────────────────────────┘
+Customer's Snowflake account:
+- Step 1: Deploy monitoring
+- Step 2: Wait 7-14 days
+- Step 3: Extract CSV
+
+Your Snowflake account:
+- Step 4: Deploy calculator (once)
+- Step 5: Upload customer CSV
+- Step 6: Generate estimates
+- Step 7: Export for sales team
 ```
 
 #### Step 1: Deploy Monitoring in Customer Account
 
-**Action:** Open Snowsight in customer's account → New Worksheet → Copy/paste entire `sql/01_deployment/deploy_cortex_monitoring.sql` → Click "Run All"
+**Action:** Open Snowsight in customer's account -> New Worksheet -> Copy/paste entire `sql/01_deployment/deploy_cortex_monitoring.sql` -> Click "Run All"
 
 **What this creates:**
 - Database: `SNOWFLAKE_EXAMPLE`
@@ -146,7 +140,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 After 7-14 days, in customer's Snowsight:
 
-**Action:** Open `sql/02_utilities/export_metrics.sql` → Run query → Click "Download" → Save as CSV
+**Action:** Open `sql/02_utilities/export_metrics.sql` -> Run query -> Click "Download" -> Save as CSV
 
 **File naming:** `customer_name_cortex_usage_YYYYMMDD.csv`
 
@@ -198,7 +192,7 @@ Deploy both monitoring and calculator in your own Snowflake account to track and
 **What gets created:**
 - Database: `SNOWFLAKE_EXAMPLE`
 - Schema: `CORTEX_USAGE`
-- 9 views tracking Cortex usage
+- 21 views (monitoring + attribution + forecast outputs)
 
 #### Step 2: Deploy Calculator
 
@@ -270,13 +264,13 @@ This tool monitors all Snowflake Cortex services:
 
 ### Cost Calculator Features
 
-#### 📈 Historical Analysis
+#### Historical Analysis
 - Interactive time series charts
 - Service-by-service breakdown
 - Cost trends over time
 - User activity metrics
 
-#### 🔮 Cost Projections
+#### Cost Projections
 - **NEW v2.0:** Simplified Cost per User Calculator at top
   - Historical reference table from actual usage data
   - Configure personas (name, user count, requests/day)
@@ -286,7 +280,7 @@ This tool monitors all Snowflake Cortex services:
 - Variance ranges for confidence intervals
 - Custom growth rate modeling
 
-#### 📋 Summary Reports
+#### Summary Reports
 - Pre-formatted credit estimates
 - Service-level cost breakdown
 - Monthly projection tables
@@ -298,17 +292,17 @@ This tool monitors all Snowflake Cortex services:
 
 ### Required
 
-✅ **Snowflake account** with Cortex usage (ideally 7-14 days of history)
+Required: Snowflake account with Cortex usage (ideally 7-14 days of history)
 
-✅ **One of the following roles:**
+Required: One of the following roles:
 - `ACCOUNTADMIN` role, OR
 - Role with `IMPORTED PRIVILEGES` on `SNOWFLAKE` database
 
-✅ **Active warehouse** for running queries
+Required: Active warehouse for running queries
 
 ### Optional (For Streamlit App)
 
-✅ Privileges to create Streamlit apps in Snowflake
+Optional: Privileges to create Streamlit apps in Snowflake
 
 ### Verify Access
 
@@ -344,11 +338,11 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 **What happens:**
 1. Creates database `SNOWFLAKE_EXAMPLE` (if not exists)
 2. Creates schema `CORTEX_USAGE` (if not exists)
-3. Creates 9 views querying `SNOWFLAKE.ACCOUNT_USAGE`
+3. Creates 21 views querying `SNOWFLAKE.ACCOUNT_USAGE` (monitoring + attribution + forecast outputs)
 4. Runs validation queries to verify deployment
 
 **Deployment validates automatically:**
-- Check for "✓ SUCCESS" messages
+- Check for "SUCCESS" messages
 - Verify row counts from each view
 - Review any warnings about empty results
 
@@ -358,19 +352,15 @@ GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;
 - Review error messages for specific issues
 - See [Troubleshooting](#troubleshooting) section
 
-### The 9 Monitoring Views
+### Key Views
 
-| View | Purpose | Granularity | User Tracking |
-|------|---------|-------------|---------------|
-| `V_CORTEX_ANALYST_DETAIL` | Analyst usage | Per request | ✅ Yes (username) |
-| `V_CORTEX_SEARCH_DETAIL` | Search daily usage | Daily aggregate | ❌ No |
-| `V_CORTEX_SEARCH_SERVING_DETAIL` | Search serving | Hourly detail | ❌ No |
-| `V_CORTEX_FUNCTIONS_DETAIL` | Functions by model | Hourly aggregate | ❌ No |
-| `V_CORTEX_FUNCTIONS_QUERY_DETAIL` | Functions by query | Per query | ✅ Yes (query_id) |
-| `V_DOCUMENT_DETAIL` | Document processing | Per request | ✅ Yes (query_id) |
-| `V_CORTEX_DAILY_SUMMARY` | **Rollup across all services** | Daily | Derived |
-| `V_CORTEX_COST_EXPORT` | **Pre-formatted for calculator** | Daily | Derived |
-| `V_METERING_SERVICES` | High-level validation | Daily | ❌ No |
+| View | Purpose |
+|------|---------|
+| `V_CORTEX_DAILY_SUMMARY` | Master rollup across all tracked services |
+| `V_CORTEX_COST_EXPORT` | Export-ready daily metrics for the calculator / CSV workflow |
+| `V_USER_SPEND_ATTRIBUTION` | User -> service -> feature -> model attribution (where possible) |
+| `V_CORTEX_USAGE_HISTORY` | Snapshot-backed history view for faster queries |
+| `V_USAGE_FORECAST_12M` | ML forecast output view (may be empty if model not available) |
 
 **Primary views for analysis:** `V_CORTEX_DAILY_SUMMARY` and `V_CORTEX_COST_EXPORT`
 
@@ -434,7 +424,7 @@ After deployment, verify everything is working correctly:
 - [ ] **Table created:** `SHOW TABLES IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes CORTEX_USAGE_SNAPSHOTS
 - [ ] **Task created:** `SHOW TASKS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes TASK_DAILY_CORTEX_SNAPSHOT
 - [ ] **Task running:** Task status is "started" (check with `SHOW TASKS`)
-- [ ] **Views return data:** `SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 1` returns rows (empty if no usage yet)
+- [ ] **Views return data:** `SELECT usage_date, service_type, total_credits FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY ORDER BY usage_date DESC, total_credits DESC LIMIT 1` returns rows (empty if no usage yet)
 - [ ] **Streamlit accessible:** App loads without errors (if deployed)
 - [ ] **Charts render:** Historical analysis displays visualizations
 
@@ -477,11 +467,11 @@ After successful deployment, enhance your monitoring setup:
 
 ### Calculator Tabs
 
-#### 1️⃣ Historical Analysis
+#### Historical Analysis
 
 **Summary Statistics:**
 - Total credits consumed
-- Total cost (credits × credit price)
+- Total cost (credits x credit price)
 - Date range covered
 - Service breakdown
 
@@ -497,7 +487,7 @@ After successful deployment, enhance your monitoring setup:
 - Understand service mix
 - Detect anomalies
 
-#### 2️⃣ Cost Projections
+#### Cost Projections
 
 **Projection Periods:**
 - 3 months
@@ -520,7 +510,7 @@ After successful deployment, enhance your monitoring setup:
 - Cumulative cost over time
 - Cost range visualization
 
-**💰 Cost per User Calculator (NEW):**
+**Cost per User Calculator:**
 
 Calculate estimated costs per user based on usage patterns:
 
@@ -537,7 +527,7 @@ Calculate estimated costs per user based on usage patterns:
 - Service-by-service breakdown
 - Percentage distribution across services
 
-**📊 Budget Capacity Calculator (NEW):**
+**Budget Capacity Calculator:**
 
 Determine how many users you can support with a given budget:
 
@@ -569,7 +559,7 @@ Determine how many users you can support with a given budget:
 - License/user capacity planning
 - Budget allocation decisions
 
-#### 3️⃣ Scenario Comparison
+#### Scenario Comparison
 
 **Side-by-Side Analysis:**
 - Compare all scenarios at once
@@ -586,7 +576,7 @@ Determine how many users you can support with a given budget:
 - Model best/worst/likely cases
 - Understand sensitivity to growth assumptions
 
-#### 4️⃣ Summary Report
+#### Summary Report
 
 **Credit Estimate Export:**
 - Service-by-service breakdown
@@ -633,7 +623,7 @@ Determine how many users you can support with a given budget:
 - Matches what appears on your Snowflake bill
 
 **Cost:**
-- Credits × Credit Price (configured in calculator)
+- Credits x Credit Price (configured in calculator)
 - **Important:** Credit prices vary by contract
 - Always verify pricing with Snowflake account team
 
@@ -652,13 +642,13 @@ Determine how many users you can support with a given budget:
 **How projections work:**
 1. **Baseline:** Average daily credit usage from historical data
 2. **Growth rate:** Compound monthly growth applied to baseline
-3. **Variance:** ±X% range around projection (configurable)
+3. **Variance:** +/-X% range around projection (configurable)
 4. **Cumulative:** Sum of all months in projection period
 
 **Formula:**
 ```
-Monthly Credits = Baseline × (1 + Growth Rate) ^ Month Number
-Monthly Cost = Monthly Credits × Credit Price
+Monthly Credits = Baseline x (1 + Growth Rate) ^ Month Number
+Monthly Cost = Monthly Credits x Credit Price
 ```
 
 **Important Notes:**
@@ -670,14 +660,14 @@ Monthly Cost = Monthly Credits × Credit Price
 ### Data Accuracy
 
 **What's accurate:**
-- ✅ Historical credit consumption (from `ACCOUNT_USAGE`)
-- ✅ Service breakdown (from detailed usage views)
-- ✅ Date ranges and time series (actual data)
+- Historical credit consumption (from `ACCOUNT_USAGE`)
+- Service breakdown (from detailed usage views)
+- Date ranges and time series (actual data)
 
 **What's estimated:**
-- ⚠️ Future growth rates (user-defined assumptions)
-- ⚠️ User adoption patterns (may vary significantly)
-- ⚠️ Credit pricing (depends on contract terms)
+- Future growth rates (user-defined assumptions)
+- User adoption patterns (may vary significantly)
+- Credit pricing (depends on contract terms)
 
 **Best practice:**
 - Present projections with variance ranges
@@ -687,7 +677,7 @@ Monthly Cost = Monthly Credits × Credit Price
 
 ### Data Latency
 
-⚠️ **ACCOUNT_USAGE has 45 minutes to 3 hours latency**
+Note: `ACCOUNT_USAGE` has 45 minutes to 3 hours latency.
 
 - Recent usage may not appear immediately
 - Wait 3+ hours after activity before expecting data
@@ -718,7 +708,7 @@ A: Run `sql/99_cleanup/cleanup_all.sql`. Complete removal in seconds. See [Clean
 
 **Q: Why are my views empty?**  
 A: Three common reasons:
-1. No Cortex usage in the lookback period (check with `SELECT * FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE service_type = 'AI_SERVICES'`)
+1. No Cortex usage in the lookback period (check with `SELECT usage_date, service_type, credits_used, credits_used_compute, credits_used_cloud_services FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY WHERE service_type = 'AI_SERVICES' ORDER BY usage_date DESC LIMIT 30`)
 2. Data latency (wait 3 hours after usage)
 3. Lookback period too short (extend to 90 or 180 days)
 
@@ -836,7 +826,7 @@ The script provides three removal options:
 ```sql
 DROP VIEW IF EXISTS V_CORTEX_COST_EXPORT;
 DROP VIEW IF EXISTS V_CORTEX_DAILY_SUMMARY;
--- ... (drops all 9 views)
+-- ... (drops all 21 views)
 ```
 
 **Option 2: Drop schema** (removes views and schema)
@@ -856,7 +846,7 @@ DROP STREAMLIT IF EXISTS CORTEX_COST_CALCULATOR;
 
 ### Safety
 
-✅ **Cleanup is completely safe:**
+Cleanup is completely safe:
 - Only affects monitoring objects (views, schema, database)
 - Never touches source data in `ACCOUNT_USAGE`
 - Never touches customer data or other databases
@@ -900,30 +890,29 @@ DROP STREAMLIT IF EXISTS CORTEX_COST_CALCULATOR;
 ## Project Structure
 
 ```
-AI_Scoping/
-├── README.md                          # This file - complete guide
-├── images/                            # Screenshots and visuals
-│   ├── streamlit_screenshot.png       # Streamlit app preview
-│   └── README.md                      # Screenshot instructions
-│
-├── docs/                              # User-facing documentation
-│   ├── 01-GETTING_STARTED.md          # Getting started guide
-│   ├── 02-DEPLOYMENT_WALKTHROUGH.md   # Deployment walkthrough
-│   └── 03-TROUBLESHOOTING.md          # Issue resolution
-│
-├── deploy_all.sql                              # ⚡ ONE-COMMAND: Deploy everything (Git-integrated, project root)
-│
-├── sql/
-│   ├── 01_deployment/
-│   │   └── deploy_cortex_monitoring.sql            # Deploy monitoring only (16 views + task + table)
-│   ├── 02_utilities/
-│   │   └── export_metrics.sql                      # Extract data for SE workflow
-│   └── 99_cleanup/
-│       └── cleanup_all.sql                         # Remove all objects (complete cleanup)
-│
-└── streamlit/cortex_cost_calculator/
-    ├── streamlit_app.py               # Full-featured calculator with v2.0 features
-    └── environment.yml                # Package dependencies
+cortex-trail/
+- README.md                          # This file - complete guide
+- images/                            # Screenshots and visuals
+  - README.md                        # Optional screenshot instructions
+
+- docs/                              # User-facing documentation
+  - 01-GETTING_STARTED.md            # Getting started guide
+  - 02-DEPLOYMENT_WALKTHROUGH.md     # Deployment walkthrough
+  - 03-TROUBLESHOOTING.md            # Issue resolution
+
+- deploy_all.sql                     # Deploy everything (Git-integrated, project root)
+
+- sql/
+  - 01_deployment/
+    - deploy_cortex_monitoring.sql   # Deploy monitoring only (21 views + task + table)
+  - 02_utilities/
+    - export_metrics.sql             # Extract data for SE workflow
+  - 99_cleanup/
+    - cleanup_all.sql                # Remove all objects (complete cleanup)
+
+- streamlit/cortex_cost_calculator/
+  - streamlit_app.py                 # Streamlit app
+  - environment.yml                  # Package dependencies
 ```
 
 **Essential files** organized for clarity and ease of use.
@@ -934,26 +923,26 @@ AI_Scoping/
 
 ### For Deployment
 
-1. ✅ **Test in sandbox first** - Deploy to dev/test account before production
-2. ✅ **Verify permissions** - Check `ACCOUNT_USAGE` access before deployment
-3. ✅ **Document customizations** - Note any changes to lookback periods or naming
-4. ✅ **Grant minimal access** - Only give SELECT on views, not entire database
+1. **Test in sandbox first** - Deploy to dev/test account before production
+2. **Verify permissions** - Check `ACCOUNT_USAGE` access before deployment
+3. **Document customizations** - Note any changes to lookback periods or naming
+4. **Grant minimal access** - Only give SELECT on views, not entire database
 
 ### For Cost Estimation
 
-1. ✅ **Include variance ranges** - Never present single-point estimates
-2. ✅ **Update monthly** - Refresh projections as actual usage accumulates
-3. ✅ **Validate pricing** - Confirm credit costs with Snowflake account team
-4. ✅ **Show assumptions** - Document growth rates and methodology clearly
-5. ✅ **Track accuracy** - Compare projections to actuals over time
+1. **Include variance ranges** - Never present single-point estimates
+2. **Update monthly** - Refresh projections as actual usage accumulates
+3. **Validate pricing** - Confirm credit costs with Snowflake account team
+4. **Show assumptions** - Document growth rates and methodology clearly
+5. **Track accuracy** - Compare projections to actuals over time
 
 ### For Stakeholder Presentations
 
-1. ✅ **Lead with ranges** - "Estimated $10K-$15K/month" not "$12.5K/month"
-2. ✅ **Explain methodology** - Briefly describe how projections are calculated
-3. ✅ **Show scenarios** - Present multiple growth scenarios side-by-side
-4. ✅ **Provide exports** - Give stakeholders CSV files for their own analysis
-5. ✅ **Set expectations** - Emphasize these are estimates, not commitments
+1. **Lead with ranges** - "Estimated $10K-$15K/month" not "$12.5K/month"
+2. **Explain methodology** - Briefly describe how projections are calculated
+3. **Show scenarios** - Present multiple growth scenarios side-by-side
+4. **Provide exports** - Give stakeholders CSV files for their own analysis
+5. **Set expectations** - Emphasize these are estimates, not commitments
 
 ---
 
@@ -976,12 +965,12 @@ AI_Scoping/
 - **NEW**: Serverless scheduled task (no warehouse configuration required)
 - **NEW**: Snapshot table (CORTEX_USAGE_SNAPSHOTS) for historical tracking
 - **NEW**: V_CORTEX_USAGE_HISTORY view with pre-calculated metrics and trend analysis
-- **NEW**: Smart data fetching with automatic fallback (snapshot → live view)
+- **NEW**: Smart data fetching with automatic fallback (snapshot -> live view)
 - **NEW**: 30-day rolling totals for accurate cost estimation
 - **Fast queries** via snapshot table with automated daily capture
 - **Clean documentation** focused on user needs
 - **Dual workflow support** for SE and customer deployments
-- **Complete monitoring** with 16 views + snapshot table + serverless task
+- **Complete monitoring** with 21 views + snapshot table + serverless task
 
 ---
 
@@ -1020,10 +1009,10 @@ We welcome feedback to improve this tool:
 - Snowflake Customers (external)
 
 **Usage Rights:**
-- ✅ Deploy in your Snowflake account
-- ✅ Customize for your needs
-- ✅ Share with customers and colleagues
-- ✅ Modify and extend
+- Deploy in your Snowflake account
+- Customize for your needs
+- Share with customers and colleagues
+- Modify and extend
 
 **Disclaimer:**
 This tool is provided as-is for cost estimation purposes. Projections are estimates based on user-defined assumptions and historical data. Actual costs may vary. Always verify credit pricing with your Snowflake account team and review actuals against projections regularly.
