@@ -1,20 +1,20 @@
 ![Reference Implementation](https://img.shields.io/badge/Reference-Implementation-blue)
 ![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
-![Expires](https://img.shields.io/badge/Expires-2025--12--25-orange)
+![Expires](https://img.shields.io/badge/Expires-2026--02--04-orange)
 
 # Snowflake Cortex Cost Calculator v2.9
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2025-12-25**  
+> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**  
 > This demo uses Snowflake features current as of November 2025.  
 > After expiration, this repository will be archived and made private.
 
 **Author:** SE Community  
-**Purpose:** Reference implementation for Cortex cost monitoring and forecasting  
-**Created:** 2025-11-25 | **Expires:** 2025-12-25 (30 days) | **Status:** ACTIVE
+**Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting  
+**Created:** 2025-11-25 | **Expires:** 2026-02-04 (30 days) | **Status:** ACTIVE
 
 ---
 
-**Monitor Cortex usage and forecast future costs with confidence.**
+**Understand which users and features are driving Cortex spend, and forecast usage 12 months out.**
 
 A professional toolkit for tracking Snowflake Cortex service consumption and generating accurate cost projections. Perfect for Solutions Engineers during scoping exercises and for customers managing their AI workload budgets.
 
@@ -62,14 +62,16 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 
 **For Solution Engineers:** Deploy monitoring in customer accounts, extract usage data, and generate cost estimates in your own calculator.
 
-**For Customers:** Deploy directly in your Snowflake account for ongoing cost monitoring and forecasting.
+**For Customers:** Deploy directly in your Snowflake account for ongoing spend attribution and 12-month forecasting.
 
 ### Installation Time
 - **Initial Setup:** < 5 minutes
 - **Per-Customer Analysis:** 5-10 minutes
 
 ### What You Get
-- ✅ **16 monitoring views** tracking all Cortex services
+- ✅ **21 views** (monitoring + attribution + forecast)
+- ✅ **User spend attribution views** (Analyst + Functions + Document Processing) using `QUERY_HISTORY` joins
+- ✅ **ML-powered 12-month forecast** using `SNOWFLAKE.ML.FORECAST` (with automatic fallback if unavailable)
 - ✅ **Query-level cost tracking** - identify expensive queries
 - ✅ **Document processing analysis** - compare PARSE_DOCUMENT vs Document AI
 - ✅ **Fine-tuning ROI tracking** - separate training vs inference costs
@@ -132,7 +134,7 @@ A professional toolkit for tracking Snowflake Cortex service consumption and gen
 **What this creates:**
 - Database: `SNOWFLAKE_EXAMPLE`
 - Schema: `CORTEX_USAGE`
-- 16 monitoring views tracking all Cortex usage (v2.6)
+- 21 views (monitoring + attribution + forecast)
 - 1 snapshot table for historical tracking
 - 1 serverless task (runs daily at 3 AM)
 
@@ -428,7 +430,7 @@ After deployment, verify everything is working correctly:
 
 - [ ] **Database created:** `SHOW DATABASES LIKE 'SNOWFLAKE_EXAMPLE'` returns 1 row
 - [ ] **Schema created:** `SHOW SCHEMAS IN DATABASE SNOWFLAKE_EXAMPLE` includes CORTEX_USAGE
-- [ ] **Views created:** `SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` returns 16 rows
+- [ ] **Views created:** `SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` returns 21 rows
 - [ ] **Table created:** `SHOW TABLES IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes CORTEX_USAGE_SNAPSHOTS
 - [ ] **Task created:** `SHOW TASKS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE` includes TASK_DAILY_CORTEX_SNAPSHOT
 - [ ] **Task running:** Task status is "started" (check with `SHOW TASKS`)
@@ -877,7 +879,7 @@ DROP STREAMLIT IF EXISTS CORTEX_COST_CALCULATOR;
 - [ACCOUNT_USAGE Overview](https://docs.snowflake.com/en/sql-reference/account-usage)
 - [CORTEX_ANALYST_USAGE_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/cortex_analyst_usage_history)
 - [CORTEX_SEARCH_DAILY_USAGE_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/cortex_search_daily_usage_history)
-- [CORTEX_FUNCTIONS_USAGE_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/cortex_functions_usage_history)
+- [CORTEX_AISQL_USAGE_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/cortex_aisql_usage_history)
 - [DOCUMENT_AI_USAGE_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/document_ai_usage_history)
 - [METERING_DAILY_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/metering_daily_history)
 
@@ -1032,7 +1034,7 @@ This tool is provided as-is for cost estimation purposes. Projections are estima
 
 This demonstration project includes mandatory expiration controls:
 
-**Expiration Date:** 2025-12-25 (30 days from creation)
+**Expiration Date:** 2026-02-04 (30 days from creation)
 
 **Enforcement Mechanisms:**
 1. **Deployment Check:** `deploy_all.sql` blocks execution after expiration date

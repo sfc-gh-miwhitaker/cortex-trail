@@ -69,6 +69,40 @@ def fetch_data_from_views(lookback_days=30):
     """
     return session.sql(live_query).to_pandas()
 
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def fetch_user_spend_attribution(lookback_days=30):
+    """Fetch user-level spend attribution (Analyst + Functions + Document Processing)."""
+    query = f"""
+    SELECT
+        usage_date,
+        user_name,
+        service_type,
+        feature_name,
+        model_name,
+        credits_used,
+        operations,
+        credits_per_operation
+    FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_USER_SPEND_ATTRIBUTION
+    WHERE usage_date >= DATEADD('day', -{lookback_days}, CURRENT_DATE())
+    ORDER BY usage_date DESC, credits_used DESC
+    """
+    return session.sql(query).to_pandas()
+
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def fetch_ml_forecast_12m():
+    """Fetch 12-month daily forecast from the ML-backed view (may be empty if model unavailable)."""
+    query = """
+    SELECT
+        service_type,
+        forecast_date,
+        forecast_credits,
+        lower_bound_credits,
+        upper_bound_credits
+    FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_USAGE_FORECAST_12M
+    ORDER BY forecast_date
+    """
+    return session.sql(query).to_pandas()
+
 def calculate_30day_totals(df):
     """Calculate rolling 30-day totals for cost estimation"""
     if df.empty:
@@ -176,7 +210,7 @@ def create_credit_summary(df, credit_cost=3.00):
     return summary[['Service', 'Total Credits', 'Avg Credits/Day', 'Est. Credits/Month', 'Est. Cost/Month']]
 
 def main():
-    st.title("📊 Cortex Cost Calculator")
+    st.title("Cortex Cost Calculator")
     st.markdown("""
     Estimate and project costs for Snowflake Cortex services based on actual usage data.
     **For Solution Engineers:** Upload customer CSV files or query your own account views.
@@ -184,7 +218,7 @@ def main():
     
     # Sidebar configuration
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.header("Configuration")
         
         # Data source selection
         data_source = st.radio(
@@ -225,7 +259,7 @@ def main():
             help="Variance range for cost estimates"
         ) / 100
         
-        if st.button("🔄 Refresh Data"):
+        if st.button("Refresh Data"):
             st.cache_data.clear()
     
     # Load data based on source
@@ -243,7 +277,7 @@ def main():
             with st.spinner("Loading CSV file..."):
                 df = load_data_from_csv(uploaded_file)
         else:
-            st.info("👆 Please upload a CSV file from the customer's account")
+            st.info("Please upload a CSV file from the customer's account.")
             st.markdown("""
             **To get customer data:**
             1. Run `@sql/extract_metrics_for_calculator.sql` in customer's Snowflake
@@ -261,25 +295,320 @@ def main():
     if 'DATE' not in df.columns:
         df['DATE'] = pd.to_datetime(df['USAGE_DATE']) if 'USAGE_DATE' in df.columns else pd.to_datetime(df.iloc[:, 0])
     
-    # Create tabs
-    tab1, tab2, tab3, tab4 = st.tabs([
-        "📈 Historical Analysis",
-        "🤖 AISQL Functions",
-        "🔮 Cost Projections",
-        "📋 Summary Report"
+    # Create tabs (refocused: user attribution + 12-month forecast are primary)
+    tab_user, tab_forecast, tab_hist, tab_aisql, tab_proj, tab_summary = st.tabs([
+        "User Spend Attribution",
+        "12-Month Forecast",
+        "Historical Analysis",
+        "AISQL Functions",
+        "Cost Projections",
+        "Summary Report"
     ])
     
-    with tab1:
+    with tab_user:
+        show_user_spend_attribution(data_source=data_source, lookback_days=lookback_days if data_source == "Query Views (Same Account)" else None, credit_cost=credit_cost)
+    
+    with tab_forecast:
+        show_12_month_forecast(data_source=data_source, credit_cost=credit_cost, df=df)
+    
+    with tab_hist:
         show_historical_analysis(df, credit_cost)
     
-    with tab2:
+    with tab_aisql:
         show_aisql_functions(credit_cost)
     
-    with tab3:
+    with tab_proj:
         show_cost_projections(df, credit_cost, variance_pct)
     
-    with tab4:
+    with tab_summary:
         show_summary_report(df, credit_cost, variance_pct)
+
+def show_user_spend_attribution(data_source, lookback_days, credit_cost):
+    """Primary view: who is driving spend, and with which features/models."""
+    st.header("User Spend Attribution")
+
+    if data_source != "Query Views (Same Account)":
+        st.info("User attribution is available only when querying the monitoring views in the same account (it relies on ACCOUNT_USAGE + QUERY_HISTORY).")
+        return
+
+    if lookback_days is None:
+        lookback_days = 30
+
+    try:
+        with st.spinner("Loading user attribution data..."):
+            udf = fetch_user_spend_attribution(lookback_days)
+    except Exception as e:
+        st.error(f"Error loading user attribution views: {str(e)}")
+        st.info("Make sure monitoring views v3.1+ are deployed (V_USER_SPEND_ATTRIBUTION).")
+        return
+
+    if udf is None or udf.empty:
+        st.warning("No attributable user-level data found in the selected period.")
+        st.caption("Note: some services (e.g., Cortex Search) cannot be attributed to users due to platform limitations.")
+        return
+
+    udf.columns = udf.columns.str.upper()
+    udf["COST_USD"] = udf["CREDITS_USED"] * credit_cost
+
+    total_credits = float(udf["CREDITS_USED"].sum())
+    total_cost = float(udf["COST_USD"].sum())
+    unique_users = int(udf["USER_NAME"].nunique())
+
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        st.metric("Total Credits (Attributed)", format_number(total_credits))
+    with col2:
+        st.metric("Total Cost (Attributed)", format_currency(total_cost))
+    with col3:
+        st.metric("Users (Attributed)", format_number(unique_users))
+
+    st.divider()
+
+    st.subheader("Top Users by Spend")
+    top_users = (
+        udf.groupby("USER_NAME", as_index=False)[["CREDITS_USED", "COST_USD"]]
+        .sum()
+        .sort_values("CREDITS_USED", ascending=False)
+        .head(15)
+    )
+
+    fig_users = px.bar(
+        top_users,
+        x="USER_NAME",
+        y="CREDITS_USED",
+        title="Top users by credits consumed (attributed)",
+        labels={"USER_NAME": "User", "CREDITS_USED": "Credits"},
+    )
+    fig_users.update_layout(xaxis_tickangle=-45)
+    st.plotly_chart(fig_users, use_container_width=True)
+
+    st.dataframe(
+        top_users.style.format({"CREDITS_USED": "{:,.4f}", "COST_USD": "${:,.2f}"}),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+    st.divider()
+
+    st.subheader("What Features Are Driving Spend?")
+    sunburst_df = (
+        udf.groupby(["USER_NAME", "SERVICE_TYPE", "FEATURE_NAME", "MODEL_NAME"], as_index=False)["CREDITS_USED"]
+        .sum()
+        .sort_values("CREDITS_USED", ascending=False)
+    )
+
+    # Plotly sunburst struggles with NULL labels; normalize for visualization.
+    sunburst_df["MODEL_NAME"] = sunburst_df["MODEL_NAME"].fillna("(none)")
+
+    fig_sb = px.sunburst(
+        sunburst_df,
+        path=["USER_NAME", "SERVICE_TYPE", "FEATURE_NAME", "MODEL_NAME"],
+        values="CREDITS_USED",
+        title="User → service → feature → model (credits)",
+    )
+    st.plotly_chart(fig_sb, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("Drill-down: User Details")
+    selected_user = st.selectbox("Select a user", options=sorted(udf["USER_NAME"].unique()))
+    user_df = udf[udf["USER_NAME"] == selected_user].copy()
+    user_breakdown = (
+        user_df.groupby(["SERVICE_TYPE", "FEATURE_NAME", "MODEL_NAME"], as_index=False)[["CREDITS_USED", "COST_USD"]]
+        .sum()
+        .sort_values("CREDITS_USED", ascending=False)
+    )
+    user_breakdown["MODEL_NAME"] = user_breakdown["MODEL_NAME"].fillna("(none)")
+
+    st.dataframe(
+        user_breakdown.style.format({"CREDITS_USED": "{:,.4f}", "COST_USD": "${:,.2f}"}),
+        use_container_width=True,
+        hide_index=True,
+    )
+
+def show_12_month_forecast(data_source, credit_cost, df):
+    """Primary view: forecast current usage out 12 months (ML.FORECAST when available)."""
+    st.header("12-Month Forecast")
+
+    projection_months = st.slider(
+        "Projection period (months)",
+        min_value=3,
+        max_value=24,
+        value=12,
+        help="Uses ML.FORECAST when available; otherwise falls back to a simple statistical projection.",
+    )
+    projection_days = int(projection_months * 30.5)
+
+    # ------------------------------------------------------------------------
+    # Preferred path: ML forecast from Snowflake (same-account deployments)
+    # ------------------------------------------------------------------------
+    if data_source == "Query Views (Same Account)":
+        try:
+            with st.spinner("Loading ML forecast..."):
+                fdf = fetch_ml_forecast_12m()
+        except Exception as e:
+            fdf = pd.DataFrame()
+            st.warning(f"Unable to query ML forecast view: {str(e)}")
+
+        if fdf is not None and not fdf.empty:
+            fdf.columns = fdf.columns.str.upper()
+            fdf["FORECAST_DATE"] = pd.to_datetime(fdf["FORECAST_DATE"])
+
+            # Filter to requested horizon from first forecast date
+            start_date = fdf["FORECAST_DATE"].min()
+            end_date = start_date + pd.Timedelta(days=projection_days)
+            fdf = fdf[(fdf["FORECAST_DATE"] >= start_date) & (fdf["FORECAST_DATE"] < end_date)].copy()
+
+            if fdf.empty:
+                st.warning("ML forecast returned no rows for the selected horizon.")
+            else:
+                st.caption("Forecast produced by Snowflake ML forecasting (`SNOWFLAKE.ML.FORECAST`).")
+
+                # Monthly rollup (credits + bounds)
+                fdf["MONTH"] = fdf["FORECAST_DATE"].dt.to_period("M").dt.to_timestamp()
+
+                monthly = (
+                    fdf.groupby(["MONTH", "SERVICE_TYPE"], as_index=False)[
+                        ["FORECAST_CREDITS", "LOWER_BOUND_CREDITS", "UPPER_BOUND_CREDITS"]
+                    ]
+                    .sum()
+                )
+                monthly_total = (
+                    monthly.groupby("MONTH", as_index=False)[
+                        ["FORECAST_CREDITS", "LOWER_BOUND_CREDITS", "UPPER_BOUND_CREDITS"]
+                    ]
+                    .sum()
+                )
+                monthly_total["FORECAST_COST_USD"] = monthly_total["FORECAST_CREDITS"] * credit_cost
+                monthly_total["LOWER_COST_USD"] = monthly_total["LOWER_BOUND_CREDITS"] * credit_cost
+                monthly_total["UPPER_COST_USD"] = monthly_total["UPPER_BOUND_CREDITS"] * credit_cost
+
+                total_forecast_credits = float(monthly_total["FORECAST_CREDITS"].sum())
+                total_forecast_cost = float(monthly_total["FORECAST_COST_USD"].sum())
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.metric("Forecast credits (total)", format_number(total_forecast_credits))
+                with col2:
+                    st.metric("Forecast cost (total)", format_currency(total_forecast_cost))
+
+                st.divider()
+
+                fig = go.Figure()
+                fig.add_trace(
+                    go.Scatter(
+                        x=monthly_total["MONTH"],
+                        y=monthly_total["UPPER_COST_USD"],
+                        mode="lines",
+                        name="Upper bound",
+                        line=dict(width=0),
+                        showlegend=True,
+                    )
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=monthly_total["MONTH"],
+                        y=monthly_total["LOWER_COST_USD"],
+                        mode="lines",
+                        name="Lower bound",
+                        line=dict(width=0),
+                        fill="tonexty",
+                        fillcolor="rgba(41, 181, 232, 0.2)",
+                        showlegend=True,
+                    )
+                )
+                fig.add_trace(
+                    go.Scatter(
+                        x=monthly_total["MONTH"],
+                        y=monthly_total["FORECAST_COST_USD"],
+                        mode="lines+markers",
+                        name="Forecast",
+                        line=dict(color="#29B5E8", width=3),
+                    )
+                )
+                fig.update_layout(
+                    title="Monthly forecast (total cost)",
+                    xaxis_title="Month",
+                    yaxis_title="Projected cost (USD)",
+                    hovermode="x unified",
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+                st.subheader("Monthly breakdown (total)")
+                st.dataframe(
+                    monthly_total[["MONTH", "FORECAST_CREDITS", "FORECAST_COST_USD", "LOWER_COST_USD", "UPPER_COST_USD"]].style.format(
+                        {
+                            "FORECAST_CREDITS": "{:,.4f}",
+                            "FORECAST_COST_USD": "${:,.2f}",
+                            "LOWER_COST_USD": "${:,.2f}",
+                            "UPPER_COST_USD": "${:,.2f}",
+                        }
+                    ),
+                    use_container_width=True,
+                    hide_index=True,
+                )
+
+                st.subheader("Service breakdown (monthly credits)")
+                service_month = monthly.pivot_table(
+                    index="MONTH", columns="SERVICE_TYPE", values="FORECAST_CREDITS", aggfunc="sum", fill_value=0
+                ).reset_index()
+                st.dataframe(service_month, use_container_width=True, hide_index=True)
+
+                return
+
+        st.info("ML forecast model/view is unavailable or empty. Falling back to a simple projection from historical data.")
+
+    # ------------------------------------------------------------------------
+    # Fallback path: simple statistical projection from the currently loaded data
+    # ------------------------------------------------------------------------
+    if df is None or df.empty:
+        st.warning("No historical data available to project.")
+        return
+
+    df_local = df.copy()
+    df_local.columns = df_local.columns.str.upper()
+    if "DATE" not in df_local.columns:
+        st.warning("Expected a DATE column in the historical dataset.")
+        return
+
+    df_local["DATE"] = pd.to_datetime(df_local["DATE"])
+    daily_total = df_local.groupby("DATE", as_index=False)["TOTAL_CREDITS"].sum().sort_values("DATE")
+
+    if len(daily_total) < 7:
+        st.warning("Not enough historical data points to create a meaningful projection (need at least 7 days).")
+        return
+
+    # Linear trend on daily totals (simple, transparent fallback)
+    x = np.arange(len(daily_total))
+    y = daily_total["TOTAL_CREDITS"].values.astype(float)
+    slope, intercept = np.polyfit(x, y, deg=1)
+
+    last_date = daily_total["DATE"].max()
+    future_dates = pd.date_range(start=last_date + pd.Timedelta(days=1), periods=projection_days, freq="D")
+    x_future = np.arange(len(daily_total), len(daily_total) + len(future_dates))
+    y_future = np.maximum(0, intercept + slope * x_future)
+
+    proj = pd.DataFrame({"DATE": future_dates, "FORECAST_CREDITS": y_future})
+    proj["MONTH"] = proj["DATE"].dt.to_period("M").dt.to_timestamp()
+    monthly = proj.groupby("MONTH", as_index=False)["FORECAST_CREDITS"].sum()
+    monthly["FORECAST_COST_USD"] = monthly["FORECAST_CREDITS"] * credit_cost
+
+    st.caption("Fallback forecast: simple linear trend extrapolation on daily total credits.")
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Forecast credits (total)", format_number(float(monthly["FORECAST_CREDITS"].sum())))
+    with col2:
+        st.metric("Forecast cost (total)", format_currency(float(monthly["FORECAST_COST_USD"].sum())))
+
+    fig = px.line(monthly, x="MONTH", y="FORECAST_COST_USD", title="Monthly projected cost (fallback)")
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.dataframe(
+        monthly.style.format({"FORECAST_CREDITS": "{:,.4f}", "FORECAST_COST_USD": "${:,.2f}"}),
+        use_container_width=True,
+        hide_index=True,
+    )
 
 def show_historical_analysis(df, credit_cost):
     """Display historical analysis tab"""
@@ -736,19 +1065,17 @@ def show_cost_projections(df, credit_cost, variance_pct):
     **Two Ways to Use Cortex Services:**
     
     1. **SQL Functions** (e.g., `SELECT SNOWFLAKE.CORTEX.COMPLETE(...)`)
-       - ✅ Hourly aggregated tracking via `CORTEX_FUNCTIONS_USAGE_HISTORY` (tokens, credits, function, model)
-       - ✅ **Plus** query-level tracking via `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY`
-       - ✅ Full visibility: per-query breakdown + per-model breakdown + hourly trends
+       - ✅ Tracked via `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY` (query, function, model, tokens, credits)
+       - ✅ Query-level grouping is available (by `QUERY_ID`)
+       - ✅ Full visibility for SQL-driven AI function usage: per-query + per-model + time trends
     
     2. **REST API** (e.g., `POST /api/v2/cortex/complete`)
-       - ✅ Hourly aggregated tracking via `CORTEX_FUNCTIONS_USAGE_HISTORY` (tokens, credits, function, model)
-       - ℹ️ Query-level details not available (Snowflake limitation)
-       - ✅ All essential metrics tracked: total tokens, credits, function names, models used
+       - ℹ️ Granular usage attribution in `ACCOUNT_USAGE` is not available at the same detail as SQL queries (Snowflake limitation)
+       - ✅ Total AI services credits can still be validated using metering (`METERING_DAILY_HISTORY`, service_type = `AI_SERVICES`)
     
-    **💡 Key Insight:** Both access methods are fully tracked in `CORTEX_FUNCTIONS_USAGE_HISTORY` with 
-    tokens, credits, and model information. The only difference is that SQL functions get **additional** 
-    query-level detail. **All cost projections in this calculator are accurate for both access methods** 
-    because they're based on the aggregated usage data that captures everything.
+    **💡 Key Insight:** This calculator’s detailed function/model breakdown is based on **SQL query telemetry**
+    (`CORTEX_AISQL_USAGE_HISTORY`). If you use the REST API heavily, reconcile totals using the metering view
+    (`V_METERING_AI_SERVICES`) to confirm coverage.
     """)
     
     # ========================================================================
@@ -1049,19 +1376,20 @@ def show_cost_projections(df, credit_cost, variance_pct):
         ### Calculation Methodology
         
         **Data Sources:**
-        - **Total Credits**: Captured from `ACCOUNT_USAGE` views (accurate for both SQL and API usage)
-        - **Query-Level Details**: Only available for SQL function calls via `CORTEX_FUNCTIONS_QUERY_USAGE_HISTORY`
-        - **REST API Calls**: Included in totals but without per-query breakdown
+        - **SQL AI Function details**: `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY`
+        - **Document processing details**: `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY`
+        - **Cortex Analyst details**: `SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY`
+        - **Total AI services credits validation**: `SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY` filtered to `AI_SERVICES`
         
         **What This Means:**
         """)
         
         comparison_data = pd.DataFrame([
-            {'Feature': 'Total credits & tokens', 'SQL Functions': '✅ Tracked (hourly)', 'REST API': '✅ Tracked (hourly)'},
-            {'Feature': 'Function & model breakdown', 'SQL Functions': '✅ Available', 'REST API': '✅ Available'},
-            {'Feature': 'Per-query details', 'SQL Functions': '✅ Yes (QUERY_ID level)', 'REST API': 'ℹ️ No (hourly aggregates only)'},
-            {'Feature': 'Cost projections accuracy', 'SQL Functions': '✅ Highly accurate', 'REST API': '✅ Highly accurate'},
-            {'Feature': 'Historical trend analysis', 'SQL Functions': '✅ Full detail', 'REST API': '✅ Full detail'}
+            {'Feature': 'Total AI services credits', 'SQL Functions': '✅ via metering validation', 'REST API': '✅ via metering validation'},
+            {'Feature': 'Function & model breakdown', 'SQL Functions': '✅ via CORTEX_AISQL_USAGE_HISTORY', 'REST API': 'ℹ️ Limited'},
+            {'Feature': 'Per-query details', 'SQL Functions': '✅ QUERY_ID level', 'REST API': 'ℹ️ Not available'},
+            {'Feature': 'User attribution', 'SQL Functions': '✅ via QUERY_HISTORY join', 'REST API': 'ℹ️ Not available'},
+            {'Feature': 'Historical trend analysis', 'SQL Functions': '✅ Full detail', 'REST API': '✅ totals via metering'}
         ])
         
         st.dataframe(comparison_data, use_container_width=True, hide_index=True)
@@ -1069,16 +1397,14 @@ def show_cost_projections(df, credit_cost, variance_pct):
         st.markdown("""
         **Impact on Your Cost Analysis:**
         
-        ✅ **Good News:** Cost projections in this calculator are highly accurate for **both** access methods because:
-        - `CORTEX_FUNCTIONS_USAGE_HISTORY` captures all usage (SQL + API) with tokens, credits, function, and model details
-        - Historical trends, daily summaries, and cost projections use this aggregated data
-        - Total credit consumption is 100% accurate regardless of how you access Cortex
+        ✅ **Good News:** For SQL-based usage, this calculator provides high-detail attribution and projections because:
+        - `CORTEX_AISQL_USAGE_HISTORY` provides query/function/model/token/credit telemetry for AI Functions used in SQL
+        - User attribution is computed by joining `QUERY_ID` to `QUERY_HISTORY`
         
-        ℹ️ **Only Difference:** The "AISQL Functions" tab shows query-level analysis, which is only available for SQL functions.
-        REST API users will see accurate totals and trends but won't see individual query breakdowns.
+        ℹ️ **REST API usage:** Granular per-request/per-query attribution is not available in `ACCOUNT_USAGE`.
+        Use `V_METERING_AI_SERVICES` to validate total credits and detect gaps if REST API usage is significant.
         
-        **Bottom Line:** Whether you use SQL functions, REST API, or both, this calculator provides accurate 
-        cost tracking and projections based on your actual ACCOUNT_USAGE data.
+        **Bottom line:** Use the detailed tabs for SQL telemetry, and use metering to validate total AI services spend.
         """)
     
     # ========================================================================

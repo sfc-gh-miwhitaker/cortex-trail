@@ -3,9 +3,9 @@
  * 
  * AUTHOR: SE Community
  * CREATED: 2025-11-25
- * EXPIRES: 2025-12-25 (30 days)
+ * EXPIRES: 2026-02-04 (30 days)
  * 
- * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2025-12-25
+ * ⚠️  DEMONSTRATION PROJECT - EXPIRES: 2026-02-04
  * ⚠️  NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
  * 
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
@@ -30,7 +30,7 @@
  *   - Schema: GIT_REPOS (shared infrastructure)
  *   - Schema: CORTEX_USAGE
  *   - Git Repository: SFE_CORTEX_TRAIL_REPO
- *   - 16 monitoring views (V_CORTEX_*)
+ *   - 21 views (monitoring + attribution + forecast)
  *   - 1 snapshot table (CORTEX_USAGE_SNAPSHOTS)
  *   - 1 serverless task (TASK_DAILY_CORTEX_SNAPSHOT)
  *   - 1 Streamlit app (CORTEX_COST_CALCULATOR)
@@ -60,19 +60,19 @@
 -- ===========================================================================
 -- This demo expires 30 days after creation.
 -- If expired, deployment should be halted and the repository forked with updated dates.
--- Expiration date: 2025-12-25
+-- Expiration date: 2026-02-04
 
 -- Display expiration status (review result before proceeding)
 SELECT 
-    '2025-12-25'::DATE AS expiration_date,
+    '2026-02-04'::DATE AS expiration_date,
     CURRENT_DATE() AS current_date,
-    DATEDIFF('day', CURRENT_DATE(), '2025-12-25'::DATE) AS days_remaining,
+    DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) AS days_remaining,
     CASE 
-        WHEN DATEDIFF('day', CURRENT_DATE(), '2025-12-25'::DATE) < 0 
+        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) < 0 
         THEN '🚫 EXPIRED - Do not deploy. Fork repository and update expiration date.'
-        WHEN DATEDIFF('day', CURRENT_DATE(), '2025-12-25'::DATE) <= 7
-        THEN '⚠️ EXPIRING SOON - ' || DATEDIFF('day', CURRENT_DATE(), '2025-12-25'::DATE) || ' days remaining'
-        ELSE '✅ ACTIVE - ' || DATEDIFF('day', CURRENT_DATE(), '2025-12-25'::DATE) || ' days remaining'
+        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) <= 7
+        THEN '⚠️ EXPIRING SOON - ' || DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) || ' days remaining'
+        ELSE '✅ ACTIVE - ' || DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) || ' days remaining'
     END AS demo_status;
 
 -- ⚠️  MANUAL CHECK REQUIRED:
@@ -93,7 +93,7 @@ CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
     API_PROVIDER = git_https_api
     API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
     ENABLED = TRUE
-    COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2025-12-25';
+    COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2026-02-04';
 
 -- ===========================================================================
 -- STEP 2: CREATE DATABASE & SCHEMAS
@@ -103,10 +103,10 @@ CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
 -- Creates: CORTEX_USAGE schema (will be created by monitoring script)
 
 CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
-    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2025-12-25';
+    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2026-02-04';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.GIT_REPOS
-    COMMENT = 'DEMO: Shared schema for Git repository stages across demo projects | EXPIRES: 2025-12-25';
+    COMMENT = 'DEMO: Shared schema for Git repository stages across demo projects | EXPIRES: 2026-02-04';
 
 -- Set context for Git repository creation
 USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
@@ -120,7 +120,7 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
 CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO
     API_INTEGRATION = SFE_CORTEX_TRAIL_GIT_API
     ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
-    COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2025-12-25';
+    COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2026-02-04';
 
 ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
 
@@ -128,7 +128,7 @@ ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
 -- STEP 4: EXECUTE MONITORING DEPLOYMENT FROM GIT
 -- ===========================================================================
 -- Executes: sql/01_deployment/deploy_cortex_monitoring.sql from Git
--- Creates: CORTEX_USAGE schema, 16 views, 1 table, 1 task
+-- Creates: CORTEX_USAGE schema, 21 views, 1 table, 1 task (forecast model optional)
 -- Pattern: EXECUTE IMMEDIATE FROM Git stage (Snowflake native)
 
 EXECUTE IMMEDIATE FROM @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/sql/01_deployment/deploy_cortex_monitoring.sql;
@@ -151,7 +151,7 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATO
     MAIN_FILE = 'streamlit_app.py'
     QUERY_WAREHOUSE = $streamlit_warehouse
     TITLE = 'Cortex Cost Calculator'
-    COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2025-12-25';
+    COMMENT = 'DEMO: cortex-trail - Interactive cost analysis and forecasting for Cortex services | EXPIRES: 2026-02-04';
 
 -- ===========================================================================
 -- DEPLOYMENT COMPLETE
@@ -166,7 +166,7 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATO
 --   - Schema: GIT_REPOS (shared infrastructure)
 --   - Schema: CORTEX_USAGE
 --   - Git Repository: SFE_CORTEX_TRAIL_REPO
---   - Views: 16 monitoring views (V_CORTEX_*)
+--   - Views: 21 views (monitoring + attribution + forecast)
 --   - Table: CORTEX_USAGE_SNAPSHOTS
 --   - Task: TASK_DAILY_CORTEX_SNAPSHOT (serverless)
 --   - Streamlit App: CORTEX_COST_CALCULATOR
@@ -188,11 +188,11 @@ CREATE OR REPLACE STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATO
 -- Check 1: Git repository accessible and contains SQL files
 LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/sql/ PATTERN='.*\.sql';
 
--- Check 2: Monitoring views created (should be 16)
+-- Check 2: Views created (should be 21)
 SELECT 
     CASE 
-        WHEN COUNT(*) = 16 THEN 'SUCCESS: All 16 monitoring views created'
-        ELSE 'WARNING: Expected 16 views, found ' || COUNT(*) || ' views'
+        WHEN COUNT(*) = 21 THEN 'SUCCESS: All 21 views created'
+        ELSE 'WARNING: Expected 21 views, found ' || COUNT(*) || ' views'
     END AS validation_status
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
 WHERE TABLE_SCHEMA = 'CORTEX_USAGE'

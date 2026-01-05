@@ -344,7 +344,7 @@ FROM chunked_text;
 
 ### Cost Estimation
 
-Calculate translation costs using CORTEX_FUNCTIONS_USAGE_HISTORY:
+Calculate translation costs using CORTEX_AISQL_USAGE_HISTORY:
 
 ```sql
 -- Estimate monthly translation costs
@@ -354,7 +354,7 @@ SELECT
     SUM(tokens) AS total_tokens,
     SUM(token_credits) AS total_credits,
     ROUND(SUM(token_credits) * 3.00, 2) AS estimated_cost_usd
-FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY
 WHERE function_name = 'AI_TRANSLATE'
     AND start_time >= DATEADD('month', -3, CURRENT_TIMESTAMP())
 GROUP BY 1, 2
@@ -408,7 +408,7 @@ SELECT
     COUNT(*) AS translation_count,
     SUM(token_credits) AS daily_credits,
     ROUND(SUM(token_credits) * 3.00, 2) AS daily_cost_usd
-FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_FUNCTIONS_USAGE_HISTORY
+FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY
 WHERE function_name = 'AI_TRANSLATE'
     AND start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
 GROUP BY 1
