@@ -1,30 +1,30 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - Git-Integrated Deployment
- * 
+ *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
  * EXPIRES: 2026-02-04 (30 days)
- * 
+ *
  * DEMONSTRATION PROJECT - EXPIRES: 2026-02-04
  * NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
- * 
+ *
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
  *   1. Copy this ENTIRE script
  *   2. Open Snowsight -> New Worksheet
  *   3. Paste the script
  *   4. Click "Run All"
  *   5. Wait ~2 minutes for complete deployment
- * 
+ *
  * PURPOSE:
  *   Single-script deployment leveraging Snowflake native Git integration.
- *   Creates API Integration -> Git Repository -> Executes SQL from Git -> 
+ *   Creates API Integration -> Git Repository -> Executes SQL from Git ->
  *   Deploys Streamlit from Git.
- * 
+ *
  * OBJECTS CREATED:
- * 
+ *
  *   Account-Level:
  *   - API Integration: SFE_CORTEX_TRAIL_GIT_API
- *   
+ *
  *   Database-Level (SNOWFLAKE_EXAMPLE):
  *   - Database: SNOWFLAKE_EXAMPLE
  *   - Schema: GIT_REPOS (shared infrastructure)
@@ -34,23 +34,23 @@
  *   - 1 snapshot table (CORTEX_USAGE_SNAPSHOTS)
  *   - 1 serverless task (TASK_DAILY_CORTEX_SNAPSHOT)
  *   - 1 Streamlit app (CORTEX_COST_CALCULATOR)
- * 
+ *
  * GITHUB REPOSITORY:
- *   https://github.com/sfc-gh-miwhitaker/cortex-trail
- * 
+ *   https://github.com/sfc-gh-se-community/cortex-trail
+ *
  * PREREQUISITES:
  *   - ACCOUNTADMIN role OR role with:
  *     * CREATE DATABASE
- *     * CREATE API INTEGRATION  
+ *     * CREATE API INTEGRATION
  *     * CREATE GIT REPOSITORY
  *     * IMPORTED PRIVILEGES on SNOWFLAKE database
  *   - Active warehouse (XSMALL or larger)
- * 
+ *
  * DEPLOYMENT TIME: ~2 minutes
- * 
+ *
  * CLEANUP:
  *   Run sql/99_cleanup/cleanup_all.sql for complete removal
- * 
+ *
  * VERSION: 3.0 (Updated LLM model pricing, deprecation warnings)
  * LAST UPDATED: 2026-01-05
  ******************************************************************************/
@@ -73,12 +73,12 @@ BEGIN
 END;
 
 -- Display expiration status (review result before proceeding)
-SELECT 
+SELECT
     '2026-02-04'::DATE AS expiration_date,
     CURRENT_DATE() AS current_date,
     DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) AS days_remaining,
-    CASE 
-        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) < 0 
+    CASE
+        WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) < 0
         THEN 'EXPIRED - Do not deploy. Fork repository and update expiration date.'
         WHEN DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) <= 7
         THEN 'EXPIRING SOON - ' || DATEDIFF('day', CURRENT_DATE(), '2026-02-04'::DATE) || ' days remaining'
@@ -87,7 +87,7 @@ SELECT
 
 -- This demo uses Snowflake features current as of December 2025.
 -- To use after expiration:
---   1. Fork: https://github.com/sfc-gh-miwhitaker/cortex-trail
+--   1. Fork: https://github.com/sfc-gh-se-community/cortex-trail
 --   2. Update expiration_date in this file
 --   3. Review/update for latest Snowflake syntax and features
 
@@ -99,7 +99,7 @@ SELECT
 
 CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
     API_PROVIDER = git_https_api
-    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-se-community')
     ENABLED = TRUE
     COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2026-02-04';
 
@@ -123,11 +123,11 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
 -- STEP 3: CREATE GIT REPOSITORY
 -- ===========================================================================
 -- Creates: CORTEX_TRAIL_REPO in GIT_REPOS schema
--- Connects to: https://github.com/sfc-gh-miwhitaker/cortex-trail
+-- Connects to: https://github.com/sfc-gh-se-community/cortex-trail
 
 CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO
     API_INTEGRATION = SFE_CORTEX_TRAIL_GIT_API
-    ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
+    ORIGIN = 'https://github.com/sfc-gh-se-community/cortex-trail.git'
     COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2026-02-04';
 
 ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
@@ -200,8 +200,8 @@ ALTER STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR ADD LIVE V
 LIST @SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO/branches/main/sql/ PATTERN='.*\.sql';
 
 -- Check 2: Views created (should be 21)
-SELECT 
-    CASE 
+SELECT
+    CASE
         WHEN COUNT(*) = 21 THEN 'SUCCESS: All 21 views created'
         ELSE 'WARNING: Expected 21 views, found ' || COUNT(*) || ' views'
     END AS validation_status
@@ -210,8 +210,8 @@ WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
     AND TABLE_CATALOG = 'SNOWFLAKE_EXAMPLE';
 
 -- Check 3: Snapshot table exists
-SELECT 
-    CASE 
+SELECT
+    CASE
         WHEN COUNT(*) = 1 THEN 'SUCCESS: Snapshot table created'
         ELSE 'WARNING: Snapshot table not found'
     END AS validation_status
@@ -227,9 +227,9 @@ SHOW TASKS LIKE 'TASK_DAILY_CORTEX_SNAPSHOT' IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_
 SHOW STREAMLITS LIKE 'CORTEX_COST_CALCULATOR' IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
 -- Check 6: Test data access (empty result is normal if no Cortex usage yet)
-SELECT 
+SELECT
     COUNT(*) AS row_count,
-    CASE 
+    CASE
         WHEN COUNT(*) > 0 THEN 'Data available - views are working'
         ELSE 'No data yet (normal if account has no Cortex usage)'
     END AS data_status
@@ -246,7 +246,7 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 --    -> Switch role: USE ROLE ACCOUNTADMIN;
 --
 -- 2. "Git repository fetch failed"
---    -> Verify repo is public: https://github.com/sfc-gh-miwhitaker/cortex-trail
+--    -> Verify repo is public: https://github.com/sfc-gh-se-community/cortex-trail
 --    -> Check network connectivity to GitHub
 --
 -- 3. "EXECUTE IMMEDIATE FROM failed"
@@ -264,4 +264,3 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 --    -> Check permissions: GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <your_role>;
 --
 -- Detailed docs: See docs/03-TROUBLESHOOTING.md in GitHub repository
-

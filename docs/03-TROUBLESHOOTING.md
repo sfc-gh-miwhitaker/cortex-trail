@@ -50,7 +50,7 @@ CREATE SCHEMA IF NOT EXISTS CORTEX_USAGE;
 SHOW VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
 -- Check for errors in recent queries
-SELECT 
+SELECT
     query_text,
     error_code,
     error_message
@@ -96,8 +96,8 @@ USE WAREHOUSE <LARGE_WAREHOUSE>;
 
 **Symptoms:**
 ```
-SQL compilation error: 
-Object 'SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY' does not exist 
+SQL compilation error:
+Object 'SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY' does not exist
 or not authorized.
 ```
 
@@ -153,7 +153,7 @@ GRANT OWNERSHIP ON DATABASE SNOWFLAKE_EXAMPLE TO ROLE <YOUR_ROLE>;
 -- As ACCOUNTADMIN or database owner
 GRANT USAGE ON DATABASE SNOWFLAKE_EXAMPLE TO ROLE <USER_ROLE>;
 GRANT USAGE ON SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE TO ROLE <USER_ROLE>;
-GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE 
+GRANT SELECT ON ALL VIEWS IN SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE
 TO ROLE <USER_ROLE>;
 ```
 
@@ -170,7 +170,7 @@ TO ROLE <USER_ROLE>;
 **Diagnosis:**
 ```sql
 -- Check if ANY Cortex usage exists
-SELECT 
+SELECT
     service_type,
     usage_date,
     SUM(credits_used) as credits
@@ -217,7 +217,7 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY;
 **Diagnosis:**
 ```sql
 -- Check which services have data
-SELECT 
+SELECT
     'Analyst' as service,
     COUNT(*) as records,
     MIN(start_time) as earliest,
@@ -226,7 +226,7 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY
 
 UNION ALL
 
-SELECT 
+SELECT
     'Search',
     COUNT(*),
     MIN(usage_date),
@@ -235,7 +235,7 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_DAILY_USAGE_HISTORY
 
 UNION ALL
 
-SELECT 
+SELECT
     'Functions',
     COUNT(*),
     MIN(start_time),
@@ -244,7 +244,7 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY
 
 UNION ALL
 
-SELECT 
+SELECT
     'Document AI',
     COUNT(*),
     MIN(start_time),
@@ -271,7 +271,7 @@ FROM SNOWFLAKE.ACCOUNT_USAGE.DOCUMENT_AI_USAGE_HISTORY;
 **Solution:**
 ```sql
 -- Verify which views have user info
-SELECT 
+SELECT
     'Has user_name' as check_type,
     COUNT(*) as records
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY
@@ -279,7 +279,7 @@ WHERE user_name IS NOT NULL
 
 UNION ALL
 
-SELECT 
+SELECT
     'Search (no users)',
     COUNT(*)
 FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_SEARCH_DAILY_USAGE_HISTORY;
@@ -298,7 +298,7 @@ This is a data limitation, not a bug. Update projections accordingly.
 **Investigation:**
 ```sql
 -- Compare monitoring view totals to metering
-SELECT 
+SELECT
     'Monitoring Views' as source,
     SUM(total_credits) as credits
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY
@@ -306,7 +306,7 @@ WHERE usage_date >= DATEADD('day', -30, CURRENT_DATE())
 
 UNION ALL
 
-SELECT 
+SELECT
     'METERING_DAILY_HISTORY',
     SUM(credits_used)
 FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
@@ -399,7 +399,7 @@ Error parsing DATE column: [date value] does not match format
 1. **Verify Date Format in Export**
    ```sql
    -- In extraction query, ensure proper format
-   SELECT 
+   SELECT
        TO_CHAR(date, 'YYYY-MM-DD') as date,  -- Force format
        ...
    ```
@@ -429,7 +429,7 @@ Error parsing DATE column: [date value] does not match format
    ```python
    # Test connection separately
    from snowflake.connector import connect
-   
+
    conn = connect(
        account='<account>',
        user='<user>',
@@ -483,7 +483,7 @@ streamlit run app.py
 **Diagnosis:**
 ```sql
 -- Check query profile
-SELECT 
+SELECT
     query_id,
     query_text,
     total_elapsed_time,
@@ -511,7 +511,15 @@ ORDER BY total_elapsed_time DESC;
 3. **Add Filters**
    ```sql
    -- Filter by specific service
-   SELECT * FROM V_CORTEX_DAILY_SUMMARY
+   SELECT
+       usage_date,
+       service_type,
+       daily_unique_users,
+       total_operations,
+       total_credits,
+       credits_per_user,
+       credits_per_operation
+   FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY
    WHERE service_type = 'Cortex Functions'
        AND usage_date >= DATEADD('day', -7, CURRENT_DATE());
    ```
@@ -520,10 +528,26 @@ ORDER BY total_elapsed_time DESC;
    ```sql
    -- Create materialized view for better performance
    CREATE MATERIALIZED VIEW V_CORTEX_DAILY_SUMMARY_MAT AS
-   SELECT * FROM V_CORTEX_DAILY_SUMMARY;
-   
+   SELECT
+       usage_date,
+       service_type,
+       daily_unique_users,
+       total_operations,
+       total_credits,
+       credits_per_user,
+       credits_per_operation
+   FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
+
    -- Query the materialized version
-   SELECT * FROM V_CORTEX_DAILY_SUMMARY_MAT;
+   SELECT
+       usage_date,
+       service_type,
+       daily_unique_users,
+       total_operations,
+       total_credits,
+       credits_per_user,
+       credits_per_operation
+   FROM V_CORTEX_DAILY_SUMMARY_MAT;
    ```
 
 ---
@@ -540,9 +564,9 @@ ORDER BY total_elapsed_time DESC;
    ```sql
    -- Export less data
    SET lookback_days = 30;  -- Instead of 90
-   
+
    -- Or aggregate before export
-   SELECT 
+   SELECT
        DATE_TRUNC('week', date) as week,
        service_type,
        SUM(total_credits) as weekly_credits,
@@ -555,7 +579,7 @@ ORDER BY total_elapsed_time DESC;
    ```bash
    # Compress CSV before upload
    gzip metrics.csv
-   
+
    # Calculator can read gzipped files
    ```
 
@@ -577,10 +601,26 @@ ORDER BY total_elapsed_time DESC;
 ALTER SESSION SET LOG_LEVEL = 'DEBUG';
 
 -- Run problematic query
-SELECT * FROM V_CORTEX_DAILY_SUMMARY;
+SELECT
+    usage_date,
+    service_type,
+    daily_unique_users,
+    total_operations,
+    total_credits,
+    credits_per_user,
+    credits_per_operation
+FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 
 -- Check logs
-SELECT * FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION())
+SELECT
+    query_id,
+    query_text,
+    start_time,
+    end_time,
+    execution_status,
+    error_message,
+    total_elapsed_time
+FROM TABLE(INFORMATION_SCHEMA.QUERY_HISTORY_BY_SESSION())
 ORDER BY start_time DESC;
 ```
 
@@ -594,7 +634,7 @@ streamlit run app.py --logger.level=debug
 
 ```sql
 -- Export diagnostic information
-SELECT 
+SELECT
     CURRENT_ACCOUNT() as account,
     CURRENT_REGION() as region,
     CURRENT_ROLE() as role,
@@ -602,14 +642,14 @@ SELECT
     CURRENT_VERSION() as version;
 
 -- Check view definitions
-SELECT 
+SELECT
     table_name,
     view_definition
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
 WHERE table_schema = 'CORTEX_USAGE';
 
 -- Recent query history
-SELECT 
+SELECT
     query_id,
     query_text,
     execution_status,
@@ -670,4 +710,3 @@ When requesting support, include:
 
 **Last Updated:** October 16, 2025
 **Version:** 1.0
-

@@ -1,8 +1,8 @@
 # Testing Guide - Cortex Cost Calculator
 
-**Project:** Cortex Cost Calculator  
-**Version:** 3.0  
-**Last Updated:** 2026-01-05  
+**Project:** Cortex Cost Calculator
+**Version:** 3.0
+**Last Updated:** 2026-01-05
 **Expires:** 2026-02-04
 
 ---
@@ -87,15 +87,15 @@ ALL TESTS PASSED - Deployment validated successfully
 ### Troubleshooting Failed Tests
 
 #### "View does not exist"
-**Cause:** Views not deployed  
+**Cause:** Views not deployed
 **Solution:** Run `sql/01_deployment/deploy_cortex_monitoring.sql`
 
 #### "Insufficient privileges"
-**Cause:** Missing ACCOUNT_USAGE permissions  
+**Cause:** Missing ACCOUNT_USAGE permissions
 **Solution:** `GRANT IMPORTED PRIVILEGES ON DATABASE SNOWFLAKE TO ROLE <YOUR_ROLE>;`
 
 #### "Query timeout"
-**Cause:** Performance issue  
+**Cause:** Performance issue
 **Solution:** Run snapshot task to pre-aggregate data
 
 ---
@@ -190,13 +190,13 @@ Test Python calculation functions, data transformations, and business logic.
 cd /path/to/cortex-trail
 
 # Run all tests
-python tests/test_streamlit_calcs.py
+python3 tests/test_streamlit_calcs.py
 
 # Run specific test class
-python -m unittest tests.test_streamlit_calcs.TestCalculationFunctions
+python3 -m unittest tests.test_streamlit_calcs.TestCalculationFunctions
 
 # Run with verbose output
-python tests/test_streamlit_calcs.py -v
+python3 tests/test_streamlit_calcs.py -v
 ```
 
 ### What's Tested
@@ -254,14 +254,14 @@ OK
 ### Troubleshooting Failed Tests
 
 #### "ModuleNotFoundError: No module named 'pandas'"
-**Solution:** Install dependencies: `pip install pandas numpy`
+**Solution:** This repo's unit tests do not require pandas/numpy. If you see this error, you're likely running an older version of the tests or importing the Streamlit app module directly. Run `python3 tests/test_streamlit_calcs.py` from the repo root.
 
 #### "AssertionError: Values differ"
-**Cause:** Floating point precision issue  
+**Cause:** Floating point precision issue
 **Solution:** Check `assertAlmostEqual` places parameter
 
 #### "Test timeout"
-**Cause:** Large dataset or slow function  
+**Cause:** Large dataset or slow function
 **Solution:** Add `@unittest.skip` or optimize function
 
 ---
@@ -374,10 +374,10 @@ def test_new_calculation(self):
     """Test description"""
     # Arrange
     input_value = 100
-    
+
     # Act
     result = my_function(input_value)
-    
+
     # Assert
     self.assertEqual(result, expected_value)
 ```
@@ -400,18 +400,18 @@ All tests must include:
 ## 7. Best Practices
 
 ### DO:
-- Run all tests after deployment  
-- Test in dev/sandbox environment first  
-- Document test failures with screenshots  
-- Keep tests fast (< 1 minute total)  
-- Use descriptive test names  
+- Run all tests after deployment
+- Test in dev/sandbox environment first
+- Document test failures with screenshots
+- Keep tests fast (< 1 minute total)
+- Use descriptive test names
 
 ### DON'T:
-- Skip tests because "it should work"  
-- Test in production directly  
-- Ignore warnings  
-- Hardcode sensitive data in tests  
-- Leave failing tests in codebase  
+- Skip tests because "it should work"
+- Test in production directly
+- Ignore warnings
+- Hardcode sensitive data in tests
+- Leave failing tests in codebase
 
 ---
 
@@ -444,5 +444,5 @@ Include:
 
 ---
 
-**Last Updated:** 2025-01-05  
+**Last Updated:** 2025-01-05
 **Next Review:** 2025-04-05
