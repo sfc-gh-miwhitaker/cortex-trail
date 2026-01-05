@@ -416,6 +416,143 @@ FROM (
 WHERE credits_used > 0
 ORDER BY credits_used DESC;
 
+-- ===========================================================================
+-- USER ATTRIBUTION VIEWS (NEW in v3.1)
+-- ===========================================================================
+-- Purpose: Answer “What users are driving what spend with what features?”
+--
+-- Important constraints (Snowflake platform limitations):
+-- - User attribution is available when the underlying ACCOUNT_USAGE view has USERNAME
+--   (Cortex Analyst) or can be joined to QUERY_HISTORY via QUERY_ID (Functions, Document Processing).
+-- - Cortex Search (daily/hourly aggregates) and some other services do not expose query_id/user,
+--   so they cannot be attributed to individual users and are excluded from these views.
+--
+-- NOTE: These views must exist before V_CORTEX_DAILY_SUMMARY, which uses them to compute
+--       daily_unique_users for some services.
+
+-- View 17: User Spend Attribution (daily grain, per feature/model)
+CREATE OR REPLACE VIEW V_USER_SPEND_ATTRIBUTION
+    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-07-05'
+AS
+WITH analyst AS (
+    SELECT
+        DATE_TRUNC('day', start_time) AS usage_date,
+        username AS user_name,
+        'Cortex Analyst' AS service_type,
+        'Cortex Analyst' AS feature_name,
+        CAST(NULL AS VARCHAR(100)) AS model_name,
+        SUM(credits) AS credits_used,
+        SUM(request_count) AS operations
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY
+    WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+    GROUP BY 1, 2
+),
+functions_attributed AS (
+    SELECT
+        DATE_TRUNC('day', q.start_time) AS usage_date,
+        q.user_name,
+        'Cortex Functions' AS service_type,
+        cf.function_name AS feature_name,
+        cf.model_name,
+        SUM(cf.token_credits) AS credits_used,
+        SUM(cf.tokens) AS operations
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY AS cf
+    JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS q
+        ON cf.query_id = q.query_id
+    WHERE q.start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+    GROUP BY 1, 2, 3, 4, 5
+),
+document_processing_attributed AS (
+    SELECT
+        DATE_TRUNC('day', q.start_time) AS usage_date,
+        q.user_name,
+        'Cortex Document Processing' AS service_type,
+        dp.function_name AS feature_name,
+        dp.model_name,
+        SUM(dp.credits_used) AS credits_used,
+        SUM(dp.page_count) AS operations
+    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY AS dp
+    JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS q
+        ON dp.query_id = q.query_id
+    WHERE q.start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
+    GROUP BY 1, 2, 3, 4, 5
+)
+SELECT
+    usage_date,
+    user_name,
+    service_type,
+    feature_name,
+    model_name,
+    credits_used,
+    operations,
+    CASE WHEN operations > 0 THEN credits_used / operations ELSE NULL END AS credits_per_operation
+FROM (
+    SELECT
+        usage_date,
+        user_name,
+        service_type,
+        feature_name,
+        model_name,
+        credits_used,
+        operations
+    FROM analyst
+    UNION ALL
+    SELECT
+        usage_date,
+        user_name,
+        service_type,
+        feature_name,
+        model_name,
+        credits_used,
+        operations
+    FROM functions_attributed
+    UNION ALL
+    SELECT
+        usage_date,
+        user_name,
+        service_type,
+        feature_name,
+        model_name,
+        credits_used,
+        operations
+    FROM document_processing_attributed
+);
+
+-- View 18: User Spend Summary (top users, overall + service mix)
+CREATE OR REPLACE VIEW V_USER_SPEND_SUMMARY
+    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-07-05'
+AS
+SELECT
+    user_name,
+    SUM(credits_used) AS total_credits_used,
+    SUM(CASE WHEN service_type = 'Cortex Analyst' THEN credits_used ELSE 0 END) AS analyst_credits_used,
+    SUM(CASE WHEN service_type = 'Cortex Functions' THEN credits_used ELSE 0 END) AS functions_credits_used,
+    SUM(CASE WHEN service_type = 'Cortex Document Processing' THEN credits_used ELSE 0 END) AS document_processing_credits_used,
+    MIN(usage_date) AS first_usage_date,
+    MAX(usage_date) AS last_usage_date,
+    COUNT(DISTINCT usage_date) AS active_days,
+    COUNT(DISTINCT service_type) AS services_used
+FROM V_USER_SPEND_ATTRIBUTION
+GROUP BY user_name
+ORDER BY total_credits_used DESC;
+
+-- View 19: User Feature Usage (user x service x feature x model)
+CREATE OR REPLACE VIEW V_USER_FEATURE_USAGE
+    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-07-05'
+AS
+SELECT
+    user_name,
+    service_type,
+    feature_name,
+    model_name,
+    SUM(credits_used) AS total_credits_used,
+    SUM(operations) AS total_operations,
+    MIN(usage_date) AS first_usage_date,
+    MAX(usage_date) AS last_usage_date
+FROM V_USER_SPEND_ATTRIBUTION
+GROUP BY user_name, service_type, feature_name, model_name
+ORDER BY total_credits_used DESC;
+
 -- View 13: Cortex Daily Summary (Master Rollup)
 -- Purpose: Primary view for historical analysis across all services
 CREATE OR REPLACE VIEW V_CORTEX_DAILY_SUMMARY
@@ -809,115 +946,7 @@ SELECT
 FROM CORTEX_USAGE_SNAPSHOTS
 ORDER BY date DESC, total_credits DESC;
 
--- ===========================================================================
--- USER ATTRIBUTION VIEWS (NEW in v3.1)
--- ===========================================================================
--- Purpose: Answer “What users are driving what spend with what features?”
---
--- Important constraints (Snowflake platform limitations):
--- - User attribution is available when the underlying ACCOUNT_USAGE view has USERNAME
---   (Cortex Analyst) or can be joined to QUERY_HISTORY via QUERY_ID (Functions, Document Processing).
--- - Cortex Search (daily/hourly aggregates) and some other services do not expose query_id/user,
---   so they cannot be attributed to individual users and are excluded from these views.
-
--- View 17: User Spend Attribution (daily grain, per feature/model)
-CREATE OR REPLACE VIEW V_USER_SPEND_ATTRIBUTION
-    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-07-05'
-AS
-WITH analyst AS (
-    SELECT
-        DATE_TRUNC('day', start_time) AS usage_date,
-        username AS user_name,
-        'Cortex Analyst' AS service_type,
-        'Cortex Analyst' AS feature_name,
-        CAST(NULL AS VARCHAR(100)) AS model_name,
-        SUM(credits) AS credits_used,
-        SUM(request_count) AS operations
-    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_ANALYST_USAGE_HISTORY
-    WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
-    GROUP BY 1, 2
-),
-functions_attributed AS (
-    SELECT
-        DATE_TRUNC('day', q.start_time) AS usage_date,
-        q.user_name,
-        'Cortex Functions' AS service_type,
-        cf.function_name AS feature_name,
-        cf.model_name,
-        SUM(cf.token_credits) AS credits_used,
-        SUM(cf.tokens) AS operations
-    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_AISQL_USAGE_HISTORY AS cf
-    JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS q
-        ON cf.query_id = q.query_id
-    WHERE q.start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
-    GROUP BY 1, 2, 3, 4, 5
-),
-document_processing_attributed AS (
-    SELECT
-        DATE_TRUNC('day', q.start_time) AS usage_date,
-        q.user_name,
-        'Cortex Document Processing' AS service_type,
-        dp.function_name AS feature_name,
-        dp.model_name,
-        SUM(dp.credits_used) AS credits_used,
-        SUM(dp.page_count) AS operations
-    FROM SNOWFLAKE.ACCOUNT_USAGE.CORTEX_DOCUMENT_PROCESSING_USAGE_HISTORY AS dp
-    JOIN SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY AS q
-        ON dp.query_id = q.query_id
-    WHERE q.start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP())
-    GROUP BY 1, 2, 3, 4, 5
-)
-SELECT
-    usage_date,
-    user_name,
-    service_type,
-    feature_name,
-    model_name,
-    credits_used,
-    operations,
-    CASE WHEN operations > 0 THEN credits_used / operations ELSE NULL END AS credits_per_operation
-FROM (
-    SELECT * FROM analyst
-    UNION ALL
-    SELECT * FROM functions_attributed
-    UNION ALL
-    SELECT * FROM document_processing_attributed
-);
-
--- View 18: User Spend Summary (top users, overall + service mix)
-CREATE OR REPLACE VIEW V_USER_SPEND_SUMMARY
-    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-07-05'
-AS
-SELECT
-    user_name,
-    SUM(credits_used) AS total_credits_used,
-    SUM(CASE WHEN service_type = 'Cortex Analyst' THEN credits_used ELSE 0 END) AS analyst_credits_used,
-    SUM(CASE WHEN service_type = 'Cortex Functions' THEN credits_used ELSE 0 END) AS functions_credits_used,
-    SUM(CASE WHEN service_type = 'Cortex Document Processing' THEN credits_used ELSE 0 END) AS document_processing_credits_used,
-    MIN(usage_date) AS first_usage_date,
-    MAX(usage_date) AS last_usage_date,
-    COUNT(DISTINCT usage_date) AS active_days,
-    COUNT(DISTINCT service_type) AS services_used
-FROM V_USER_SPEND_ATTRIBUTION
-GROUP BY user_name
-ORDER BY total_credits_used DESC;
-
--- View 19: User Feature Usage (user x service x feature x model)
-CREATE OR REPLACE VIEW V_USER_FEATURE_USAGE
-    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-07-05'
-AS
-SELECT
-    user_name,
-    service_type,
-    feature_name,
-    model_name,
-    SUM(credits_used) AS total_credits_used,
-    SUM(operations) AS total_operations,
-    MIN(usage_date) AS first_usage_date,
-    MAX(usage_date) AS last_usage_date
-FROM V_USER_SPEND_ATTRIBUTION
-GROUP BY user_name, service_type, feature_name, model_name
-ORDER BY total_credits_used DESC;
+-- (User attribution views are defined earlier in this script, before V_CORTEX_DAILY_SUMMARY.)
 
 -- ===========================================================================
 -- FORECASTING VIEWS + MODEL (NEW in v3.1)
@@ -1071,7 +1100,7 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_QUERY_COST_ANALYSIS;
 --   MODELS (1, optional): CORTEX_USAGE_FORECAST_MODEL (requires CREATE SNOWFLAKE.ML.FORECAST)
 --
 -- Next Steps:
---   - Query views: SELECT * FROM V_CORTEX_DAILY_SUMMARY LIMIT 10
+--   - Query views: SELECT usage_date, service_type, daily_unique_users, total_operations, total_credits FROM V_CORTEX_DAILY_SUMMARY LIMIT 10
 --   - Deploy calculator: Run deploy_all.sql from project root
 --   - Export metrics: See sql/02_utilities/export_metrics.sql
 
