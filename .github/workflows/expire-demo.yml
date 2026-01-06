@@ -111,10 +111,12 @@ jobs:
             await github.rest.issues.create({ owner, repo, title, body })
 
       - name: Archive + make private (requires MASTER_PAT)
-        if: ${{ steps.expiry.outputs.days_remaining < 0 && secrets.MASTER_PAT != '' }}
+        env:
+          MASTER_PAT: ${{ secrets.MASTER_PAT }}
+        if: ${{ steps.expiry.outputs.days_remaining < 0 && env.MASTER_PAT != '' }}
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.MASTER_PAT }}
+          github-token: ${{ env.MASTER_PAT }}
           script: |
             const owner = context.repo.owner
             const repo = context.repo.repo

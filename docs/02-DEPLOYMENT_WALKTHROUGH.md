@@ -15,7 +15,7 @@
 4. Analyze usage and generate projections (5 minutes)
 5. Export credit estimates (2 minutes)
 
-**Total time:** 15-20 minutes  
+**Total time:** 15-20 minutes
 **Note:** Monitoring should run for 7-14 days to collect meaningful usage data
 
 **Audience:** Solution Engineers and customers deploying for the first time
@@ -51,8 +51,8 @@ Create a new worksheet and run:
 
 ```sql
 -- Verify ACCOUNT_USAGE access
-SELECT COUNT(*) 
-FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY 
+SELECT COUNT(*)
+FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
 WHERE usage_date >= DATEADD('day', -7, CURRENT_DATE());
 ```
 
@@ -115,7 +115,7 @@ OK: View V_CORTEX_SEARCH_DETAIL: Y rows
 Query the summary view:
 
 ```sql
-SELECT 
+SELECT
     service_type,
     MIN(usage_date) AS first_date,
     MAX(usage_date) AS last_date,
@@ -484,11 +484,10 @@ In **your** Snowflake account:
 
 ---
 
-**Last Updated:** October 16, 2025  
-**Version:** 1.0  
+**Last Updated:** October 16, 2025
+**Version:** 1.0
 **Author:** Snowflake Solutions Engineering
 
 ---
 
 *"From deployment to projection in 15 minutes."*
-

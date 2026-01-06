@@ -2,7 +2,7 @@
 
 **Professional cost tracking and forecasting for Snowflake Cortex workloads**
 
-**Time to Deploy:** 15 minutes  
+**Time to Deploy:** 15 minutes
 **Value:** Accurate cost projections, budget planning, multi-scenario analysis
 
 ---
@@ -73,8 +73,8 @@ Before starting, ensure you have:
 Run this query to verify you have the required permissions:
 
 ```sql
-SELECT COUNT(*) 
-FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY 
+SELECT COUNT(*)
+FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
 WHERE usage_date >= DATEADD('day', -7, CURRENT_DATE());
 ```
 
@@ -305,9 +305,9 @@ Click the **"Summary Report"** tab:
      usage_date,
      service_type,
      credits_used
-   FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY 
-   WHERE service_type = 'AI_SERVICES' 
-   ORDER BY usage_date DESC 
+   FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
+   WHERE service_type = 'AI_SERVICES'
+   ORDER BY usage_date DESC
    LIMIT 10;
    ```
 
@@ -474,11 +474,10 @@ All cleanup is safe and reversible by re-running the deployment script.
 
 ---
 
-**Version:** 1.3  
-**Last Updated:** October 22, 2025  
+**Version:** 1.3
+**Last Updated:** October 22, 2025
 **Maintained by:** Snowflake Solutions Engineering
 
 ---
 
 *"From zero to cost projections in 15 minutes."*
-

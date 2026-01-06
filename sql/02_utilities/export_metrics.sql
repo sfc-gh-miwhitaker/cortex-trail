@@ -1,25 +1,25 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - Metrics Export Utility
- * 
+ *
  * PURPOSE:
  *   Extract Cortex usage data for cost analysis in Streamlit calculator.
  *   Designed for Solution Engineer two-account workflow.
- * 
+ *
  * WORKFLOW:
  *   Customer Account -> Run export -> Download CSV -> Your Account -> Upload to calculator
- * 
+ *
  * PREREQUISITES:
  *   - Monitoring views deployed (sql/01_deployment/deploy_cortex_monitoring.sql)
  *   - IMPORTED PRIVILEGES on SNOWFLAKE database
  *   - At least 7-14 days of Cortex usage for meaningful analysis
- * 
+ *
  * USAGE:
  *   1. Run query in CUSTOMER'S Snowflake account
  *   2. Click "Download" -> Save as CSV
  *   3. Upload CSV to YOUR Streamlit calculator
  *   4. Calculator generates credit projections
  *   5. Export summary for sales/pricing team
- * 
+ *
  * VERSION: 3.0 (Updated Dec 2025)
  * LAST UPDATED: 2025-12-02
  ******************************************************************************/
@@ -35,7 +35,7 @@
 -- Note: ROUND() functions prevent scientific notation in CSV exports
 --       This ensures consistent display between CSV and Streamlit UI
 
-SELECT 
+SELECT
     date,
     service_type,
     daily_unique_users,
@@ -58,7 +58,7 @@ ORDER BY date DESC, total_credits DESC;
 --
 -- Uncomment to use:
 /*
-SELECT 
+SELECT
     date,
     service_type,
     daily_unique_users,
@@ -83,7 +83,7 @@ ORDER BY date DESC, total_credits DESC;
 --
 -- Uncomment to use:
 /*
-SELECT 
+SELECT
     function_name,
     model_name,
     call_count,
@@ -124,7 +124,7 @@ ORDER BY total_credits DESC;
 -- ===========================================================================
 
 -- Check 1: Verify data exists and date range
-SELECT 
+SELECT
     COUNT(*) AS total_rows,
     MIN(date) AS earliest_date,
     MAX(date) AS latest_date,
@@ -134,7 +134,7 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_COST_EXPORT;
 -- Expected: total_rows > 0, days_of_history >= 7, service_count between 1-7
 
 -- Check 2: Service breakdown by credits
-SELECT 
+SELECT
     service_type,
     COUNT(DISTINCT date) AS days_with_data,
     ROUND(SUM(total_credits), 8) AS total_credits,
@@ -145,7 +145,7 @@ GROUP BY service_type
 ORDER BY total_credits DESC;
 
 -- Check 3: Recent activity (last 7 days) - Spot-check data quality
-SELECT 
+SELECT
     date,
     service_type,
     ROUND(total_credits, 8) AS total_credits,
@@ -157,20 +157,20 @@ ORDER BY date DESC, total_credits DESC;
 -- ===========================================================================
 -- EXPORT WORKFLOW (For Solution Engineers)
 -- ===========================================================================
--- 
+--
 -- IN CUSTOMER'S ACCOUNT:
 -- ----------------------
 -- STEP 1: Run your chosen extraction query (Option 1, 2, or 3 above)
 -- STEP 2: Verify data returned (if no data, see Troubleshooting below)
 -- STEP 3: Click "Download" -> Select "CSV" format
 -- STEP 4: Save as: customer_name_cortex_usage_YYYYMMDD.csv
--- 
+--
 -- IN YOUR ACCOUNT:
 -- ----------------
 -- STEP 5: Open YOUR Streamlit calculator (Projects -> Streamlit)
 -- STEP 6: Select "Upload Customer CSV" data source
 -- STEP 7: Upload the CSV file downloaded from customer
--- 
+--
 -- ANALYZE & EXPORT:
 -- -----------------
 -- STEP 8: Calculator displays:
@@ -178,7 +178,7 @@ ORDER BY date DESC, total_credits DESC;
 --         - Cost projections (3, 6, 12, 24 months)
 --         - Per-user cost estimates
 --         - Service-level breakdown
--- 
+--
 -- STEP 9: Export results:
 --         - Download "Credit Estimate Summary" spreadsheet
 --         - Share with sales/pricing team for proposal
@@ -189,11 +189,11 @@ ORDER BY date DESC, total_credits DESC;
 --
 -- ISSUE: "No data returned"
 -- CAUSE: Customer has no Cortex usage or insufficient history
--- FIX: 
---   1. Verify Cortex usage: 
+-- FIX:
+--   1. Verify Cortex usage:
 --      SELECT usage_date, service_type, credits_used
 --      FROM SNOWFLAKE.ACCOUNT_USAGE.METERING_DAILY_HISTORY
---      WHERE service_type = 'AI_SERVICES' 
+--      WHERE service_type = 'AI_SERVICES'
 --      ORDER BY usage_date DESC LIMIT 10;
 --   2. Minimum 7-14 days of Cortex usage recommended for analysis
 --
@@ -219,4 +219,3 @@ ORDER BY date DESC, total_credits DESC;
 --      open CSV in text editor to verify raw values are decimal format.
 --
 -- ===========================================================================
-

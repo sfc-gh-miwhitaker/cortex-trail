@@ -1,24 +1,24 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - SQL Test Suite
- * 
+ *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
  * EXPIRES: 2026-02-04 (30 days)
- * 
+ *
  * PURPOSE:
  *   Comprehensive testing suite for all SQL views in Cortex Cost Calculator.
  *   Validates view compilation, data quality, and business logic.
- * 
+ *
  * TEST CATEGORIES:
  *   1. View Compilation Tests - All views can be queried
  *   2. Data Quality Tests - NULL checks, data type validation
  *   3. Business Logic Tests - Calculations, aggregations
  *   4. Performance Tests - Query execution time
- * 
+ *
  * USAGE:
  *   Run this entire script to validate deployment.
  *   All tests should return "PASS" status.
- * 
+ *
  * VERSION: 1.0
  * LAST UPDATED: 2026-01-05
  ******************************************************************************/
@@ -201,11 +201,11 @@ SELECT
     9 AS test_number,
     'Data Quality' AS test_category,
     'Dates within valid range (90 days lookback)' AS test_name,
-    CASE 
-        WHEN MIN(usage_date) >= DATEADD('day', -90, CURRENT_DATE()) 
-         AND MAX(usage_date) <= CURRENT_DATE() 
-        THEN 'PASS' 
-        ELSE 'WARN' 
+    CASE
+        WHEN MIN(usage_date) >= DATEADD('day', -90, CURRENT_DATE())
+         AND MAX(usage_date) <= CURRENT_DATE()
+        THEN 'PASS'
+        ELSE 'WARN'
     END AS test_status,
     'Date range: ' || MIN(usage_date)::VARCHAR || ' to ' || MAX(usage_date)::VARCHAR AS test_message,
     0 AS execution_time_ms,
@@ -238,11 +238,11 @@ SELECT
     11 AS test_number,
     'Business Logic' AS test_category,
     'credits_per_user calculated correctly' AS test_name,
-    CASE 
+    CASE
         WHEN COUNT(*) = 0 THEN 'PASS'
         ELSE 'FAIL'
     END AS test_status,
-    CASE 
+    CASE
         WHEN COUNT(*) = 0 THEN 'All calculations correct'
         ELSE 'Found ' || COUNT(*) || ' rows with incorrect calculations'
     END AS test_message,
@@ -264,7 +264,7 @@ DECLARE
 BEGIN
     SELECT COUNT(*) INTO :row_count FROM V_CORTEX_DAILY_SUMMARY;
     exec_time_ms := DATEDIFF('millisecond', :test_start, CURRENT_TIMESTAMP());
-    
+
     INSERT INTO TEST_RESULTS VALUES (
         12, 'Performance', 'V_CORTEX_DAILY_SUMMARY query under 5 seconds',
         CASE WHEN :exec_time_ms < 5000 THEN 'PASS' ELSE 'WARN' END,
@@ -278,7 +278,7 @@ END;
 -- ===========================================================================
 
 -- Display all test results
-SELECT 
+SELECT
     '+-------------------------------------------------------------------+' AS separator
 UNION ALL
 SELECT '|               CORTEX COST CALCULATOR - TEST RESULTS              |'
@@ -315,11 +315,11 @@ ORDER BY test_category;
 -- Overall status
 SELECT '' AS separator;
 SELECT
-    CASE 
-        WHEN SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) = 0 THEN 
+    CASE
+        WHEN SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) = 0 THEN
             'ALL TESTS PASSED - Deployment validated successfully'
-        ELSE 
-            SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) || 
+        ELSE
+            SUM(CASE WHEN test_status = 'FAIL' THEN 1 ELSE 0 END) ||
             ' TEST(S) FAILED - Review failures above'
     END AS overall_status,
     COUNT(*) AS total_tests,
