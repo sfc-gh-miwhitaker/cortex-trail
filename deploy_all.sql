@@ -36,7 +36,7 @@
  *   - 1 Streamlit app (CORTEX_COST_CALCULATOR)
  *
  * GITHUB REPOSITORY:
- *   https://github.com/sfc-gh-se-community/cortex-trail
+ *   https://github.com/sfc-gh-miwhitaker/cortex-trail
  *
  * PREREQUISITES:
  *   - ACCOUNTADMIN role OR role with:
@@ -87,7 +87,7 @@ SELECT
 
 -- This demo uses Snowflake features current as of December 2025.
 -- To use after expiration:
---   1. Fork: https://github.com/sfc-gh-se-community/cortex-trail
+--   1. Fork: https://github.com/sfc-gh-miwhitaker/cortex-trail
 --   2. Update expiration_date in this file
 --   3. Review/update for latest Snowflake syntax and features
 
@@ -99,7 +99,7 @@ SELECT
 
 CREATE OR REPLACE API INTEGRATION SFE_CORTEX_TRAIL_GIT_API
     API_PROVIDER = git_https_api
-    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-se-community')
+    API_ALLOWED_PREFIXES = ('https://github.com/sfc-gh-miwhitaker')
     ENABLED = TRUE
     COMMENT = 'DEMO: cortex-trail - GitHub API integration for public repository access | EXPIRES: 2026-02-04';
 
@@ -123,11 +123,11 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.GIT_REPOS;
 -- STEP 3: CREATE GIT REPOSITORY
 -- ===========================================================================
 -- Creates: CORTEX_TRAIL_REPO in GIT_REPOS schema
--- Connects to: https://github.com/sfc-gh-se-community/cortex-trail
+-- Connects to: https://github.com/sfc-gh-miwhitaker/cortex-trail
 
 CREATE OR REPLACE GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO
     API_INTEGRATION = SFE_CORTEX_TRAIL_GIT_API
-    ORIGIN = 'https://github.com/sfc-gh-se-community/cortex-trail.git'
+    ORIGIN = 'https://github.com/sfc-gh-miwhitaker/cortex-trail.git'
     COMMENT = 'DEMO: cortex-trail - Cortex Cost Calculator toolkit public repository | EXPIRES: 2026-02-04';
 
 ALTER GIT REPOSITORY SNOWFLAKE_EXAMPLE.GIT_REPOS.SFE_CORTEX_TRAIL_REPO FETCH;
@@ -246,7 +246,7 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY;
 --    -> Switch role: USE ROLE ACCOUNTADMIN;
 --
 -- 2. "Git repository fetch failed"
---    -> Verify repo is public: https://github.com/sfc-gh-se-community/cortex-trail
+--    -> Verify repo is public: https://github.com/sfc-gh-miwhitaker/cortex-trail
 --    -> Check network connectivity to GitHub
 --
 -- 3. "EXECUTE IMMEDIATE FROM failed"
