@@ -5,8 +5,8 @@ This directory contains screenshots and visual assets for the Cortex Cost Calcul
 ## Required Screenshots
 
 ### streamlit_screenshot.png
-**Purpose:** Preview of the Streamlit Cost Calculator application  
-**Dimensions:** 1200x800px recommended  
+**Purpose:** Preview of the Streamlit Cost Calculator application
+**Dimensions:** 1200x800px recommended
 **Format:** PNG (for quality) or JPEG (for size)
 
 **To capture:**
@@ -27,6 +27,5 @@ To fix: Deploy the calculator in a Snowflake account with Cortex usage data and 
 
 ---
 
-**Author:** SE Community  
+**Author:** SE Community
 **Last Updated:** 2025-12-02
-

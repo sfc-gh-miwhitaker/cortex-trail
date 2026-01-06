@@ -1,39 +1,39 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - Complete Cleanup
- * 
+ *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
  * EXPIRES: 2026-02-04 (30 days)
- * 
+ *
  * PURPOSE:
  *   Remove ALL objects created by deploy_all.sql
- * 
+ *
  * WHAT GETS REMOVED:
  *   - Streamlit app: CORTEX_COST_CALCULATOR
  *   - Git repository: SFE_CORTEX_TRAIL_REPO
  *   - API integration: SFE_CORTEX_TRAIL_GIT_API
  *   - Schema: CORTEX_USAGE (all views, tables, tasks)
- *   
+ *
  * WHAT STAYS (Protected shared infrastructure):
  *   - SNOWFLAKE_EXAMPLE database (may be used by other demos)
  *   - SNOWFLAKE_EXAMPLE.GIT_REPOS schema (shared across demos)
  *   - Source data in ACCOUNT_USAGE
- * 
+ *
  * DEPLOYMENT METHOD: Copy/Paste into Snowsight
  *   1. Copy this ENTIRE script
  *   2. Open Snowsight -> New Worksheet
  *   3. Paste the script
  *   4. Click "Run All"
  *   5. Wait ~30 seconds for cleanup
- * 
+ *
  * ERROR HANDLING:
  *   - All DROP commands use IF EXISTS (safe to run multiple times)
  *   - Validation queries at end verify cleanup success
- * 
+ *
  * TIME: < 1 minute
- * 
- * VERSION: 2.9 (Standards-compliant: SFE_ prefixes, ASCII-only)
- * LAST UPDATED: 2026-01-05
+ *
+ * VERSION: 3.2 (Standards-compliant: SFE_ prefixes, ASCII-only)
+ * LAST UPDATED: 2026-01-20
  ******************************************************************************/
 
 -- ===========================================================================
@@ -101,8 +101,8 @@ DROP API INTEGRATION IF EXISTS SFE_CORTEX_TRAIL_GIT_API;
 SHOW API INTEGRATIONS LIKE 'SFE_CORTEX_TRAIL_GIT_API';
 
 -- Check 2: Schema should NOT exist
-SELECT 
-    CASE 
+SELECT
+    CASE
         WHEN COUNT(*) = 0 THEN 'SUCCESS: CORTEX_USAGE schema removed'
         ELSE 'WARNING: CORTEX_USAGE schema still exists'
     END AS verification_status
@@ -116,7 +116,7 @@ SHOW GIT REPOSITORIES LIKE 'SFE_CORTEX_TRAIL_REPO' IN ACCOUNT;
 -- ===========================================================================
 -- TROUBLESHOOTING GUIDE
 -- ===========================================================================
--- 
+--
 -- If cleanup failed with permission errors:
 --
 -- 1. API Integration errors:

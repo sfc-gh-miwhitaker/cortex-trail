@@ -1,22 +1,22 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - Cost Anomaly Detection
- * 
+ *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
  * EXPIRES: 2026-02-04 (30 days)
- * 
+ *
  * PURPOSE:
  *   Proactive anomaly detection for Cortex cost spikes.
  *   Identifies unusual week-over-week growth patterns with severity levels.
- * 
+ *
  * DEPLOYMENT METHOD: Run after deploy_cortex_monitoring.sql
- * 
+ *
  * ALERT LEVELS:
  *   - HIGH: Week-over-week growth > 50%
  *   - MEDIUM: Week-over-week growth > 25%
  *   - NORMAL: Growth <= 25%
  *   - DECLINING: Negative growth
- * 
+ *
  * VERSION: 1.0
  * LAST UPDATED: 2026-01-05
  ******************************************************************************/
@@ -69,8 +69,8 @@ weekly_comparison AS (
         LAG(total_credits, 14) OVER (PARTITION BY service_type ORDER BY date) AS credits_14d_ago,
         -- Calculate 7-day moving average
         AVG(total_credits) OVER (
-            PARTITION BY service_type 
-            ORDER BY date 
+            PARTITION BY service_type
+            ORDER BY date
             ROWS BETWEEN 6 PRECEDING AND CURRENT ROW
         ) AS credits_7d_avg
     FROM daily_credits
@@ -84,31 +84,31 @@ SELECT
     credits_7d_avg,
     daily_unique_users,
     total_operations,
-    
+
     -- Calculate week-over-week growth percentage
-    CASE 
+    CASE
         WHEN credits_7d_ago IS NULL OR credits_7d_ago = 0 THEN NULL
         ELSE ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 2)
     END AS wow_growth_pct,
-    
+
     -- Calculate absolute change
-    CASE 
+    CASE
         WHEN credits_7d_ago IS NULL THEN NULL
         ELSE ROUND(total_credits - credits_7d_ago, 4)
     END AS wow_credits_change,
-    
+
     -- Calculate 2-week trend
-    CASE 
+    CASE
         WHEN credits_14d_ago IS NULL OR credits_14d_ago = 0 THEN NULL
         ELSE ROUND(((total_credits - credits_14d_ago) / credits_14d_ago) * 100, 2)
     END AS two_week_growth_pct,
-    
+
     -- Deviation from 7-day average
-    CASE 
+    CASE
         WHEN credits_7d_avg IS NULL OR credits_7d_avg = 0 THEN NULL
         ELSE ROUND(((total_credits - credits_7d_avg) / credits_7d_avg) * 100, 2)
     END AS deviation_from_avg_pct,
-    
+
     -- Alert level classification
     CASE
         WHEN credits_7d_ago IS NULL THEN 'INSUFFICIENT_DATA'
@@ -117,30 +117,30 @@ SELECT
         WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < 0 THEN 'DECLINING'
         ELSE 'NORMAL'
     END AS alert_level,
-    
+
     -- Alert message
     CASE
         WHEN credits_7d_ago IS NULL THEN 'Insufficient historical data for comparison'
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.50 THEN 
-            'HIGH ALERT: ' || service_type || ' credits increased ' || 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.50 THEN
+            'HIGH ALERT: ' || service_type || ' credits increased ' ||
             ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0) || '% vs last week'
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.25 THEN 
-            'MEDIUM ALERT: ' || service_type || ' credits increased ' || 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.25 THEN
+            'MEDIUM ALERT: ' || service_type || ' credits increased ' ||
             ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0) || '% vs last week'
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < -0.25 THEN 
-            'DECLINING: ' || service_type || ' credits decreased ' || 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < -0.25 THEN
+            'DECLINING: ' || service_type || ' credits decreased ' ||
             ABS(ROUND(((total_credits - credits_7d_ago) / credits_7d_ago) * 100, 0)) || '% vs last week'
         ELSE 'NORMAL: No significant change detected'
     END AS alert_message,
-    
+
     -- Recommended action
     CASE
         WHEN credits_7d_ago IS NULL THEN 'Continue monitoring - need more historical data'
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.50 THEN 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.50 THEN
             'INVESTIGATE: Review query patterns and user activity for ' || service_type
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.25 THEN 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) > 0.25 THEN
             'MONITOR: Track ' || service_type || ' usage closely over next few days'
-        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < -0.25 THEN 
+        WHEN ((total_credits - credits_7d_ago) / NULLIF(credits_7d_ago, 0)) < -0.25 THEN
             'REVIEW: Check if decrease in ' || service_type || ' is expected'
         ELSE 'Continue normal monitoring'
     END AS recommended_action
@@ -167,7 +167,7 @@ SELECT
     alert_message,
     recommended_action,
     daily_unique_users,
-    
+
     -- Priority score for sorting (higher = more urgent)
     CASE alert_level
         WHEN 'HIGH' THEN 3
@@ -202,7 +202,7 @@ FROM V_COST_ANOMALIES
 WHERE date >= DATEADD('day', -30, CURRENT_DATE())
   AND alert_level IN ('HIGH', 'MEDIUM', 'DECLINING')
 GROUP BY alert_level
-ORDER BY 
+ORDER BY
     CASE alert_level
         WHEN 'HIGH' THEN 1
         WHEN 'MEDIUM' THEN 2
@@ -215,7 +215,7 @@ ORDER BY
 -- ===========================================================================
 
 -- Test view creation
-SELECT 
+SELECT
     'Anomaly detection views created successfully' AS status,
     COUNT(*) AS view_count
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
@@ -223,8 +223,8 @@ WHERE TABLE_SCHEMA = 'CORTEX_USAGE'
   AND TABLE_NAME LIKE 'V_COST_ANOMALY%';
 
 -- Show current anomalies (if any)
-SELECT 
-    CASE 
+SELECT
+    CASE
         WHEN COUNT(*) = 0 THEN 'No active anomalies detected'
         ELSE COUNT(*) || ' active anomalies detected'
     END AS current_status
@@ -287,6 +287,6 @@ ORDER BY
 -- Example 4: Create email alert (with SNOWFLAKE.CORTEX.COMPLETE)
 -- SELECT SNOWFLAKE.CORTEX.COMPLETE(
 --     'mistral-large2',
---     'Generate an email alert for these cost anomalies: ' || 
+--     'Generate an email alert for these cost anomalies: ' ||
 --     (SELECT LISTAGG(alert_message, '; ') FROM V_COST_ANOMALIES_CURRENT)
 -- ) AS alert_email;

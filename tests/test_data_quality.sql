@@ -1,20 +1,20 @@
 /*******************************************************************************
  * DEMO PROJECT: Cortex Cost Calculator - Data Quality Tests
- * 
+ *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
  * EXPIRES: 2026-02-04 (30 days)
- * 
+ *
  * PURPOSE:
  *   Comprehensive data quality validation for Cortex usage data.
  *   Identifies data anomalies, missing data, and quality issues.
- * 
+ *
  * TEST CATEGORIES:
  *   1. Completeness - Missing dates, gaps in data
  *   2. Accuracy - Calculation errors, inconsistencies
  *   3. Validity - Value ranges, data types
  *   4. Consistency - Cross-view data matching
- * 
+ *
  * VERSION: 1.0
  * LAST UPDATED: 2026-01-05
  ******************************************************************************/
@@ -103,7 +103,7 @@ SELECT
     s.summary_credits,
     e.export_credits,
     ABS(s.summary_credits - e.export_credits) AS difference,
-    CASE 
+    CASE
         WHEN ABS(s.summary_credits - e.export_credits) < 0.01 THEN 'PASS'
         ELSE 'FAIL - Views out of sync'
     END AS status
@@ -179,19 +179,19 @@ SELECT '--- DATA QUALITY SCORE ---' AS header;
 WITH quality_metrics AS (
     SELECT
         -- Completeness score (0-100)
-        CASE 
+        CASE
             WHEN (SELECT COUNT(DISTINCT usage_date) FROM V_CORTEX_DAILY_SUMMARY WHERE usage_date >= DATEADD('day', -30, CURRENT_DATE())) >= 25
             THEN 100
             ELSE (SELECT COUNT(DISTINCT usage_date) * 100.0 / 30 FROM V_CORTEX_DAILY_SUMMARY WHERE usage_date >= DATEADD('day', -30, CURRENT_DATE()))
         END AS completeness_score,
-        
+
         -- Accuracy score (0-100)
         100 - (
             SELECT COUNT(*) * 10 FROM V_CORTEX_DAILY_SUMMARY
             WHERE daily_unique_users > 0
               AND ABS(credits_per_user - (total_credits / daily_unique_users)) > 0.01
         ) AS accuracy_score,
-        
+
         -- Validity score (0-100)
         100 - (
             SELECT (
@@ -200,9 +200,9 @@ WITH quality_metrics AS (
             ) * 5
             FROM V_CORTEX_DAILY_SUMMARY
         ) AS validity_score,
-        
+
         -- Consistency score (0-100)
-        CASE 
+        CASE
             WHEN (SELECT COUNT(*) FROM (
                 SELECT date, service_type, COUNT(*) AS cnt
                 FROM V_CORTEX_DAILY_SUMMARY

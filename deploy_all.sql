@@ -51,8 +51,8 @@
  * CLEANUP:
  *   Run sql/99_cleanup/cleanup_all.sql for complete removal
  *
- * VERSION: 3.0 (Updated LLM model pricing, deprecation warnings)
- * LAST UPDATED: 2026-01-05
+ * VERSION: 3.2 (USER_ID attribution, TRANSIENT snapshots)
+ * LAST UPDATED: 2026-01-20
  ******************************************************************************/
 
 -- ===========================================================================

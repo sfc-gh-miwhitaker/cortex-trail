@@ -1,8 +1,8 @@
 # AI_TRANSLATE Usage Example
 
-**Feature:** Snowflake Cortex AI_TRANSLATE  
-**Status:** GA (September 25, 2025)  
-**Supersedes:** TRANSLATE (SNOWFLAKE.CORTEX)  
+**Feature:** Snowflake Cortex AI_TRANSLATE
+**Status:** GA (September 25, 2025)
+**Supersedes:** TRANSLATE (SNOWFLAKE.CORTEX)
 
 ---
 
@@ -99,14 +99,14 @@ If you're sharing Cortex usage reports with international teams, translate servi
 CREATE OR REPLACE VIEW SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_SERVICE_TYPES_MULTILINGUAL
     COMMENT = 'DEMO: cortex-trail - Multilingual service type names via AI_TRANSLATE | EXPIRES: 2026-02-04'
 AS
-SELECT 
+SELECT
     service_type AS service_type_en,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'es') AS service_type_es,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'fr') AS service_type_fr,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'de') AS service_type_de,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'ja') AS service_type_ja
 FROM (
-    SELECT DISTINCT service_type 
+    SELECT DISTINCT service_type
     FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_DAILY_SUMMARY
 );
 
@@ -136,7 +136,7 @@ Generate cost summaries in multiple languages:
 ```sql
 -- Generate cost summary with translated descriptions
 WITH cost_summary AS (
-    SELECT 
+    SELECT
         service_type,
         SUM(total_credits) AS total_credits,
         ROUND(SUM(total_credits) * 3.00, 2) AS total_cost_usd
@@ -144,7 +144,7 @@ WITH cost_summary AS (
     WHERE date >= DATEADD('day', -30, CURRENT_DATE())
     GROUP BY service_type
 )
-SELECT 
+SELECT
     service_type,
     total_credits,
     total_cost_usd,
@@ -222,14 +222,14 @@ SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(
 
 ```sql
 -- Search for TRANSLATE function usage in stored procedures
-SELECT 
+SELECT
     procedure_name,
     procedure_definition
 FROM SNOWFLAKE.INFORMATION_SCHEMA.PROCEDURES
 WHERE procedure_definition ILIKE '%TRANSLATE(%';
 
 -- Search in views
-SELECT 
+SELECT
     table_name,
     view_definition
 FROM SNOWFLAKE.INFORMATION_SCHEMA.VIEWS
@@ -241,7 +241,7 @@ WHERE view_definition ILIKE '%TRANSLATE(%';
 **Before:**
 ```sql
 CREATE OR REPLACE VIEW customer_feedback_translated AS
-SELECT 
+SELECT
     feedback_id,
     SNOWFLAKE.CORTEX.TRANSLATE(feedback_text, 'en', 'es') AS feedback_es
 FROM customer_feedback;
@@ -250,7 +250,7 @@ FROM customer_feedback;
 **After:**
 ```sql
 CREATE OR REPLACE VIEW customer_feedback_translated AS
-SELECT 
+SELECT
     feedback_id,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(feedback_text, 'en', 'es') AS feedback_es
 FROM customer_feedback;
@@ -282,7 +282,7 @@ SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(user_comment, 'es', 'en') AS comment_englis
 
 ```sql
 -- GOOD: Batch multiple translations in single query
-SELECT 
+SELECT
     feedback_id,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(feedback_text, 'en', 'es') AS feedback_es,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(feedback_text, 'en', 'fr') AS feedback_fr,
@@ -291,7 +291,7 @@ FROM customer_feedback;
 
 -- AVOID: Separate queries (more overhead)
 -- Query 1: Spanish only
--- Query 2: French only  
+-- Query 2: French only
 -- Query 3: German only
 ```
 
@@ -300,7 +300,7 @@ FROM customer_feedback;
 ```sql
 -- GOOD: Translate once, store in table
 CREATE TABLE service_type_translations AS
-SELECT 
+SELECT
     service_type,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'es') AS service_type_es,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(service_type, 'en', 'fr') AS service_type_fr
@@ -318,7 +318,7 @@ FROM large_table;  -- Translates same text millions of times!
 
 ```sql
 -- GOOD: Handle mixed-language customer feedback
-SELECT 
+SELECT
     customer_id,
     original_text,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(original_text, '', 'en') AS normalized_english
@@ -338,7 +338,7 @@ WHERE original_text RLIKE '[^\x00-\x7F]';  -- Contains non-ASCII (likely mixed)
 ```sql
 -- Example: Translate long documents in chunks
 WITH chunked_text AS (
-    SELECT 
+    SELECT
         document_id,
         ROW_NUMBER() OVER (PARTITION BY document_id ORDER BY chunk_id) AS chunk_num,
         SUBSTR(document_text, (chunk_id * 4000) + 1, 4000) AS text_chunk
@@ -346,7 +346,7 @@ WITH chunked_text AS (
     CROSS JOIN (SELECT ROW_NUMBER() OVER (ORDER BY NULL) - 1 AS chunk_id FROM TABLE(GENERATOR(ROWCOUNT => 10)))
     WHERE SUBSTR(document_text, (chunk_id * 4000) + 1, 4000) != ''
 )
-SELECT 
+SELECT
     document_id,
     chunk_num,
     SNOWFLAKE.CORTEX.AI_TRANSLATE(text_chunk, 'en', 'es') AS translated_chunk
@@ -359,7 +359,7 @@ Calculate translation costs using CORTEX_AISQL_USAGE_HISTORY:
 
 ```sql
 -- Estimate monthly translation costs
-SELECT 
+SELECT
     DATE_TRUNC('month', start_time) AS month,
     model_name,
     SUM(tokens) AS total_tokens,
@@ -414,7 +414,7 @@ SELECT SNOWFLAKE.CORTEX.AI_TRANSLATE(
 
 ```sql
 -- Check daily translation costs
-SELECT 
+SELECT
     DATE(start_time) AS usage_date,
     COUNT(*) AS translation_count,
     SUM(token_credits) AS daily_credits,
@@ -435,14 +435,14 @@ Add translation costs to your monitoring:
 ```sql
 -- Enhanced cost view with translation breakdown
 CREATE OR REPLACE VIEW V_CORTEX_COST_WITH_TRANSLATION AS
-SELECT 
+SELECT
     date,
     service_type,
     total_credits,
     -- Separate translation costs
-    CASE WHEN service_type = 'Cortex Functions' 
+    CASE WHEN service_type = 'Cortex Functions'
          THEN total_credits * 0.15  -- Estimate: 15% is translation
-         ELSE 0 
+         ELSE 0
     END AS estimated_translation_credits,
     ROUND(total_credits * 3.00, 2) AS total_cost_usd
 FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_COST_EXPORT;
@@ -472,6 +472,5 @@ FROM SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_CORTEX_COST_EXPORT;
 
 ---
 
-**Last Updated:** 2025-11-12  
+**Last Updated:** 2025-11-12
 **Version:** 1.0 (aligned with Cortex Trail v2.6)
-

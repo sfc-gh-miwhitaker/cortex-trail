@@ -2,7 +2,7 @@
 ![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
 ![Expires](https://img.shields.io/badge/Expires-2026--02--04-orange)
 
-# Snowflake Cortex Cost Calculator v2.9
+# Snowflake Cortex Cost Calculator v3.2
 
 > **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**
 > This demo uses Snowflake features current as of December 2025.
@@ -962,6 +962,12 @@ cortex-trail/
 
 ## Version History
 
+**v3.2** (January 2026) - Performance & Cost Optimization
+- **IMPROVED**: User attribution for Cortex Functions now uses `USER_ID` column directly (GA Dec 2025)
+- **IMPROVED**: Joins to smaller `USERS` view instead of `QUERY_HISTORY` for faster attribution queries
+- **OPTIMIZED**: `CORTEX_USAGE_SNAPSHOTS` table converted to TRANSIENT (~14% storage cost savings)
+- **UPDATED**: All Snowflake features verified against Jan 2026 documentation
+
 **v2.0** (October 2025) - Serverless & Simplified Calculator Release
 - **NEW**: Simplified Cost per User Calculator (moved to top of Cost Projections tab)
 - **NEW**: Serverless scheduled task (no warehouse configuration required)
@@ -1047,7 +1053,7 @@ This demonstration project includes mandatory expiration controls:
 ---
 
 **Maintained by:** SE Community
-**Last Updated:** November 25, 2025
+**Last Updated:** January 20, 2026
 
 ---
 

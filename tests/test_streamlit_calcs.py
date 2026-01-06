@@ -19,6 +19,7 @@ class TestCalculationFunctions(unittest.TestCase):
 
     def setUp(self):
         """Create sample data for testing"""
+        random.seed(42)  # Reproducible tests
         start = date(2025, 1, 1)
         self.sample_rows = []
         for i in range(30):
