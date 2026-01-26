@@ -4,13 +4,13 @@
 
 # Snowflake Cortex Cost Calculator v3.2
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-04**
+> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-25**
 > This demo uses Snowflake features current as of December 2025.
 > After expiration, this repository will be archived and made private.
 
 **Author:** SE Community
 **Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting
-**Created:** 2026-01-05 | **Expires:** 2026-02-04 (30 days) | **Status:** ACTIVE
+**Created:** 2026-01-05 | **Expires:** 2026-02-25 (30 days) | **Status:** ACTIVE
 
 ---
 
@@ -1031,7 +1031,7 @@ This tool is provided as-is for cost estimation purposes. Projections are estima
 
 This demonstration project includes mandatory expiration controls:
 
-**Expiration Date:** 2026-02-04 (30 days from creation)
+**Expiration Date:** 2026-02-25 (30 days from creation)
 
 **Enforcement Mechanisms:**
 1. **Deployment Check:** `deploy_all.sql` blocks execution after expiration date

@@ -3,7 +3,7 @@
  *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
- * EXPIRES: 2026-02-04 (30 days)
+ * EXPIRES: 2026-02-25 (30 days)
  *
  * PURPOSE:
  *   Proactive anomaly detection for Cortex cost spikes.
@@ -32,7 +32,7 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 -- ===========================================================================
 DECLARE
     demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
-    expiration_date DATE := '2026-02-04'::DATE;
+    expiration_date DATE := '2026-02-25'::DATE;
 BEGIN
     IF (CURRENT_DATE() > expiration_date) THEN
         RAISE demo_expired;
@@ -44,7 +44,7 @@ END;
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALIES
-COMMENT = 'DEMO: cortex-trail - Detect cost anomalies with week-over-week growth analysis | EXPIRES: 2026-02-04'
+COMMENT = 'DEMO: cortex-trail - Detect cost anomalies with week-over-week growth analysis | EXPIRES: 2026-02-25'
 AS
 WITH daily_credits AS (
     SELECT
@@ -154,7 +154,7 @@ ORDER BY date DESC, alert_level DESC, wow_growth_pct DESC;
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALIES_CURRENT
-COMMENT = 'DEMO: cortex-trail - Current active cost anomalies (last 7 days) | EXPIRES: 2026-02-04'
+COMMENT = 'DEMO: cortex-trail - Current active cost anomalies (last 7 days) | EXPIRES: 2026-02-25'
 AS
 SELECT
     date,
@@ -186,7 +186,7 @@ ORDER BY priority_score DESC, date DESC, wow_growth_pct DESC;
 -- ===========================================================================
 
 CREATE OR REPLACE VIEW V_COST_ANOMALY_SUMMARY
-COMMENT = 'DEMO: cortex-trail - Aggregated anomaly statistics by alert level | EXPIRES: 2026-02-04'
+COMMENT = 'DEMO: cortex-trail - Aggregated anomaly statistics by alert level | EXPIRES: 2026-02-25'
 AS
 SELECT
     alert_level,

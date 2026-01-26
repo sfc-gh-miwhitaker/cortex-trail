@@ -3,7 +3,7 @@
 **Project:** Cortex Cost Calculator
 **Version:** 3.0
 **Last Updated:** 2026-01-05
-**Expires:** 2026-02-04
+**Expires:** 2026-02-25
 
 ---
 

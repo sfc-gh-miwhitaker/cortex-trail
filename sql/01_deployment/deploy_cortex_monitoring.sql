@@ -3,9 +3,9 @@
  *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
- * EXPIRES: 2026-02-04 (30 days)
+ * EXPIRES: 2026-02-25 (30 days)
  *
- * DEMONSTRATION PROJECT - EXPIRES: 2026-02-04
+ * DEMONSTRATION PROJECT - EXPIRES: 2026-02-25
  * NOT FOR PRODUCTION USE - REFERENCE IMPLEMENTATION ONLY
  *
  * PURPOSE:
@@ -74,7 +74,7 @@
 -- This demo expires 30 days after creation. If expired, deployment is halted.
 DECLARE
     demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
-    expiration_date DATE := '2026-02-04'::DATE;
+    expiration_date DATE := '2026-02-25'::DATE;
 BEGIN
     IF (CURRENT_DATE() > expiration_date) THEN
         RAISE demo_expired;
@@ -86,10 +86,10 @@ END;
 -- ===========================================================================
 
 CREATE DATABASE IF NOT EXISTS SNOWFLAKE_EXAMPLE
-    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2026-02-04';
+    COMMENT = 'DEMO: Repository for example/demo projects - NOT FOR PRODUCTION | EXPIRES: 2026-02-25';
 
 CREATE SCHEMA IF NOT EXISTS SNOWFLAKE_EXAMPLE.CORTEX_USAGE
-    COMMENT = 'DEMO: Cortex service usage monitoring and cost tracking (v3.2) | EXPIRES: 2026-02-04';
+    COMMENT = 'DEMO: Cortex service usage monitoring and cost tracking (v3.2) | EXPIRES: 2026-02-25';
 
 USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 
@@ -103,7 +103,7 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 -- Source: CORTEX_ANALYST_USAGE_HISTORY
 -- Granularity: Per-request with username tracking
 CREATE OR REPLACE VIEW V_CORTEX_ANALYST_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Cortex Analyst per-request usage with user tracking | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Cortex Analyst per-request usage with user tracking | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Analyst' AS service_type,
@@ -120,7 +120,7 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: CORTEX_SEARCH_DAILY_USAGE_HISTORY
 -- Granularity: Daily per service (no user tracking available)
 CREATE OR REPLACE VIEW V_CORTEX_SEARCH_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Cortex Search daily usage by service and model | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Cortex Search daily usage by service and model | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Search' AS service_type,
@@ -140,7 +140,7 @@ WHERE usage_date >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: CORTEX_SEARCH_SERVING_USAGE_HISTORY
 -- Granularity: Per-query serving metrics
 CREATE OR REPLACE VIEW V_CORTEX_SEARCH_SERVING_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Cortex Search serving query-level usage | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Cortex Search serving query-level usage | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Search Serving' AS service_type,
@@ -159,7 +159,7 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: CORTEX_AISQL_USAGE_HISTORY
 -- Granularity: Hourly per function/model (no user tracking)
 CREATE OR REPLACE VIEW V_CORTEX_FUNCTIONS_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Cortex AI SQL functions hourly usage (CORTEX_AISQL_USAGE_HISTORY) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Cortex AI SQL functions hourly usage (CORTEX_AISQL_USAGE_HISTORY) | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Functions' AS service_type,
@@ -178,7 +178,7 @@ WHERE usage_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: CORTEX_AISQL_USAGE_HISTORY
 -- Granularity: Per-query with cost efficiency metrics
 CREATE OR REPLACE VIEW V_CORTEX_FUNCTIONS_QUERY_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Per-query Cortex AI function usage with cost-per-million-tokens (CORTEX_AISQL_USAGE_HISTORY) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Per-query Cortex AI function usage with cost-per-million-tokens (CORTEX_AISQL_USAGE_HISTORY) | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Functions Query' AS service_type,
@@ -202,7 +202,7 @@ WHERE usage_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: DOCUMENT_AI_USAGE_HISTORY
 -- Note: Legacy service - use V_CORTEX_DOCUMENT_PROCESSING_DETAIL for new deployments
 CREATE OR REPLACE VIEW V_DOCUMENT_AI_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Legacy Document AI usage (use V_CORTEX_DOCUMENT_PROCESSING_DETAIL for new) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Legacy Document AI usage (use V_CORTEX_DOCUMENT_PROCESSING_DETAIL for new) | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Document AI' AS service_type,
@@ -223,7 +223,7 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Supports: PARSE_DOCUMENT, AI_EXTRACT, Document AI
 -- Granularity: Per-query with page/document metrics
 CREATE OR REPLACE VIEW V_CORTEX_DOCUMENT_PROCESSING_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Unified document processing (PARSE_DOCUMENT, AI_EXTRACT) with efficiency metrics | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Unified document processing (PARSE_DOCUMENT, AI_EXTRACT) with efficiency metrics | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Document Processing' AS service_type,
@@ -254,7 +254,7 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- Source: CORTEX_FINE_TUNING_USAGE_HISTORY (GA: Oct 10, 2024)
 -- Granularity: Training job-level with token costs
 CREATE OR REPLACE VIEW V_CORTEX_FINE_TUNING_DETAIL
-    COMMENT = 'DEMO: cortex-trail - Fine-tuning training costs with cost-per-million-tokens | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Fine-tuning training costs with cost-per-million-tokens | EXPIRES: 2026-02-25'
 AS
 SELECT
     'Cortex Fine-tuning' AS service_type,
@@ -280,7 +280,7 @@ WHERE start_time >= DATEADD('day', -90, CURRENT_TIMESTAMP());
 -- View 9: AISQL Function Summary (Aggregated by Function/Model)
 -- Purpose: Function-level cost analysis for calculator inputs
 CREATE OR REPLACE VIEW V_AISQL_FUNCTION_SUMMARY
-    COMMENT = 'DEMO: cortex-trail - Function-level summary for cost-per-million-tokens analysis | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Function-level summary for cost-per-million-tokens analysis | EXPIRES: 2026-02-25'
 AS
 SELECT
     function_name,
@@ -308,7 +308,7 @@ ORDER BY total_credits DESC;
 -- View 10: AISQL Model Comparison
 -- Purpose: Compare cost/performance across different LLM models
 CREATE OR REPLACE VIEW V_AISQL_MODEL_COMPARISON
-    COMMENT = 'DEMO: cortex-trail - Model comparison for cost optimization | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Model comparison for cost optimization | EXPIRES: 2026-02-25'
 AS
 SELECT
     model_name,
@@ -336,7 +336,7 @@ ORDER BY total_credits DESC;
 -- View 11: AISQL Daily Trends
 -- Purpose: Time-series analysis for trend detection
 CREATE OR REPLACE VIEW V_AISQL_DAILY_TRENDS
-    COMMENT = 'DEMO: cortex-trail - Daily trends for serverless vs warehouse usage patterns | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Daily trends for serverless vs warehouse usage patterns | EXPIRES: 2026-02-25'
 AS
 SELECT
     DATE(usage_time) AS usage_date,
@@ -355,7 +355,7 @@ ORDER BY usage_date DESC, daily_credits DESC;
 -- View 12: Query-Level Cost Analysis (NEW in v2.6)
 -- Purpose: Identify most expensive individual queries across all services
 CREATE OR REPLACE VIEW V_QUERY_COST_ANALYSIS
-    COMMENT = 'DEMO: cortex-trail - Most expensive queries across LLM functions and document processing | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Most expensive queries across LLM functions and document processing | EXPIRES: 2026-02-25'
 AS
 WITH function_queries AS (
     SELECT
@@ -448,7 +448,7 @@ ORDER BY credits_used DESC;
 
 -- View 17: User Spend Attribution (daily grain, per feature/model)
 CREATE OR REPLACE VIEW V_USER_SPEND_ATTRIBUTION
-    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User spend attribution across Cortex services (Analyst + Functions + Document Processing) | EXPIRES: 2026-02-25'
 AS
 WITH analyst AS (
     SELECT
@@ -538,7 +538,7 @@ FROM (
 
 -- View 18: User Spend Summary (top users, overall + service mix)
 CREATE OR REPLACE VIEW V_USER_SPEND_SUMMARY
-    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User spend summary (top users by total credits) | EXPIRES: 2026-02-25'
 AS
 SELECT
     user_name,
@@ -556,7 +556,7 @@ ORDER BY total_credits_used DESC;
 
 -- View 19: User Feature Usage (user x service x feature x model)
 CREATE OR REPLACE VIEW V_USER_FEATURE_USAGE
-    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - User feature/model usage breakdown (attributed) | EXPIRES: 2026-02-25'
 AS
 SELECT
     user_name,
@@ -574,7 +574,7 @@ ORDER BY total_credits_used DESC;
 -- View 13: Cortex Daily Summary (Master Rollup)
 -- Purpose: Primary view for historical analysis across all services
 CREATE OR REPLACE VIEW V_CORTEX_DAILY_SUMMARY
-    COMMENT = 'DEMO: cortex-trail - Master daily rollup across all Cortex services for trend analysis | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Master daily rollup across all Cortex services for trend analysis | EXPIRES: 2026-02-25'
 AS
 WITH
 analyst AS (
@@ -696,7 +696,7 @@ ORDER BY usage_date DESC, total_credits DESC;
 -- View 14: Cortex Cost Export (Calculator Input Format)
 -- Purpose: Pre-formatted for Streamlit calculator CSV uploads
 CREATE OR REPLACE VIEW V_CORTEX_COST_EXPORT
-    COMMENT = 'DEMO: cortex-trail - Export-ready format for cost calculator with projected costs | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Export-ready format for cost calculator with projected costs | EXPIRES: 2026-02-25'
 AS
 SELECT
     usage_date AS date,
@@ -718,7 +718,7 @@ ORDER BY date DESC, total_credits DESC;
 -- View 15: Metering AI Services (Aggregate Credit View)
 -- Purpose: High-level view of all AI service credits from metering
 CREATE OR REPLACE VIEW V_METERING_AI_SERVICES
-    COMMENT = 'DEMO: cortex-trail - AI_SERVICES metering rollup for compute vs cloud services credits | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - AI_SERVICES metering rollup for compute vs cloud services credits | EXPIRES: 2026-02-25'
 AS
 SELECT
     usage_date,
@@ -774,7 +774,7 @@ CREATE TRANSIENT TABLE IF NOT EXISTS CORTEX_USAGE_SNAPSHOTS (
     -- Note: No primary key constraint (nullable function_name/model_name columns)
     -- Uniqueness enforced by MERGE statement in TASK_DAILY_CORTEX_SNAPSHOT
 )
-COMMENT = 'DEMO: cortex-trail - Daily usage snapshots with function/model/document granularity for fast queries | EXPIRES: 2026-02-04';
+COMMENT = 'DEMO: cortex-trail - Daily usage snapshots with function/model/document granularity for fast queries | EXPIRES: 2026-02-25';
 
 -- ===========================================================================
 -- SERVERLESS TASK: DAILY SNAPSHOT CAPTURE
@@ -794,7 +794,7 @@ CREATE OR REPLACE TASK TASK_DAILY_CORTEX_SNAPSHOT
     SCHEDULE = 'USING CRON 0 3 * * * America/Los_Angeles'
     USER_TASK_MANAGED_INITIAL_WAREHOUSE_SIZE = 'XSMALL'
     SERVERLESS_TASK_MAX_STATEMENT_SIZE = 'SMALL'
-    COMMENT = 'DEMO: cortex-trail - Serverless daily snapshot task with cost guardrails (3:00 AM Pacific) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Serverless daily snapshot task with cost guardrails (3:00 AM Pacific) | EXPIRES: 2026-02-25'
 AS
 MERGE INTO CORTEX_USAGE_SNAPSHOTS AS target
 USING (
@@ -940,7 +940,7 @@ ALTER TASK TASK_DAILY_CORTEX_SNAPSHOT RESUME;
 -- Purpose: Fast queries for Streamlit calculator (reads from snapshot table)
 -- Performance: 4-5x faster than querying ACCOUNT_USAGE views directly
 CREATE OR REPLACE VIEW V_CORTEX_USAGE_HISTORY
-    COMMENT = 'DEMO: cortex-trail - Historical snapshots with trend analysis (optimized for Streamlit calculator) | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Historical snapshots with trend analysis (optimized for Streamlit calculator) | EXPIRES: 2026-02-25'
 AS
 SELECT
     usage_date AS date,
@@ -983,7 +983,7 @@ ORDER BY date DESC, total_credits DESC;
 
 -- View 20: Forecast Training Input (daily credits per service)
 CREATE OR REPLACE VIEW V_FORECAST_INPUT
-    COMMENT = 'DEMO: cortex-trail - Forecast training input for daily credits by service | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Forecast training input for daily credits by service | EXPIRES: 2026-02-25'
 AS
 SELECT
     service_type,
@@ -1002,12 +1002,12 @@ BEGIN
             TIMESTAMP_COLNAME => 'TS',
             TARGET_COLNAME => 'Y'
         )
-        COMMENT = 'DEMO: cortex-trail - Forecast model for daily credits by service | EXPIRES: 2026-02-04'
+        COMMENT = 'DEMO: cortex-trail - Forecast model for daily credits by service | EXPIRES: 2026-02-25'
     $$;
 
     EXECUTE IMMEDIATE $$
         CREATE OR REPLACE VIEW V_USAGE_FORECAST_12M
-            COMMENT = 'DEMO: cortex-trail - 12-month daily forecast (ML.FORECAST) for credits by service | EXPIRES: 2026-02-04'
+            COMMENT = 'DEMO: cortex-trail - 12-month daily forecast (ML.FORECAST) for credits by service | EXPIRES: 2026-02-25'
         AS
         SELECT
             SERIES::VARCHAR AS service_type,
@@ -1022,7 +1022,7 @@ EXCEPTION
         -- Fallback: deploy an empty view so the rest of the demo still works.
         EXECUTE IMMEDIATE $$
             CREATE OR REPLACE VIEW V_USAGE_FORECAST_12M
-                COMMENT = 'DEMO: cortex-trail - 12-month daily forecast view placeholder (model unavailable) | EXPIRES: 2026-02-04'
+                COMMENT = 'DEMO: cortex-trail - 12-month daily forecast view placeholder (model unavailable) | EXPIRES: 2026-02-25'
             AS
             SELECT
                 CAST(NULL AS VARCHAR) AS service_type,

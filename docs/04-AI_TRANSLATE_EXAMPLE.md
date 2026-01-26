@@ -97,7 +97,7 @@ If you're sharing Cortex usage reports with international teams, translate servi
 ```sql
 -- Create multilingual service type reference
 CREATE OR REPLACE VIEW SNOWFLAKE_EXAMPLE.CORTEX_USAGE.V_SERVICE_TYPES_MULTILINGUAL
-    COMMENT = 'DEMO: cortex-trail - Multilingual service type names via AI_TRANSLATE | EXPIRES: 2026-02-04'
+    COMMENT = 'DEMO: cortex-trail - Multilingual service type names via AI_TRANSLATE | EXPIRES: 2026-02-25'
 AS
 SELECT
     service_type AS service_type_en,
