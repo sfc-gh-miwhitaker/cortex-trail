@@ -3,7 +3,7 @@
  *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
- * EXPIRES: 2026-02-25 (30 days)
+ * See deploy_all.sql for expiration (30 days)
  *
  * PURPOSE:
  *   Centralized configuration management for Cortex Cost Calculator.
@@ -37,7 +37,7 @@ USE SCHEMA SNOWFLAKE_EXAMPLE.CORTEX_USAGE;
 -- ===========================================================================
 DECLARE
     demo_expired EXCEPTION (-20001, 'DEMO EXPIRED: Do not deploy. Fork the repository and update expiration + syntax.');
-    expiration_date DATE := '2026-02-25'::DATE;
+    expiration_date DATE := $demo_expiration_date::DATE;
 BEGIN
     IF (CURRENT_DATE() > expiration_date) THEN
         RAISE demo_expired;
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS CORTEX_USAGE_CONFIG (
     updated_at TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP(),
     updated_by VARCHAR(100) DEFAULT CURRENT_USER()
 )
-COMMENT = 'DEMO: cortex-trail - Configuration settings for Cortex Cost Calculator | EXPIRES: 2026-02-25';
+COMMENT = 'DEMO: cortex-trail - Configuration settings for Cortex Cost Calculator | See deploy_all.sql for expiration';
 
 -- ===========================================================================
 -- INSERT DEFAULT CONFIGURATION VALUES

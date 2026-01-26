@@ -3,7 +3,7 @@
  *
  * AUTHOR: SE Community
  * CREATED: 2026-01-05
- * EXPIRES: 2026-02-25 (30 days)
+ * See deploy_all.sql for expiration (30 days)
  *
  * PURPOSE:
  *   Remove ALL objects created by deploy_all.sql

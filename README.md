@@ -1,16 +1,16 @@
 ![Reference Implementation](https://img.shields.io/badge/Reference-Implementation-blue)
 ![Ready to Run](https://img.shields.io/badge/Ready%20to%20Run-Yes-green)
-![Expires](https://img.shields.io/badge/Expires-2026--02--04-orange)
+![Expires](https://img.shields.io/badge/Expires-See%20deploy__all.sql-orange)
 
 # Snowflake Cortex Cost Calculator v3.2
 
-> **DEMONSTRATION PROJECT - EXPIRES: 2026-02-25**
+> **DEMONSTRATION PROJECT** - Expiration date in [`deploy_all.sql` line 6](deploy_all.sql) (SSOT)
 > This demo uses Snowflake features current as of December 2025.
 > After expiration, this repository will be archived and made private.
 
 **Author:** SE Community
 **Purpose:** Reference implementation for Cortex spend attribution and 12-month forecasting
-**Created:** 2026-01-05 | **Expires:** 2026-02-25 (30 days) | **Status:** ACTIVE
+**Expiration:** See [`deploy_all.sql` line 6](deploy_all.sql) | **Status:** ACTIVE
 
 ---
 
@@ -1031,11 +1031,11 @@ This tool is provided as-is for cost estimation purposes. Projections are estima
 
 This demonstration project includes mandatory expiration controls:
 
-**Expiration Date:** 2026-02-25 (30 days from creation)
+**Expiration Date:** See [`deploy_all.sql` line 6](deploy_all.sql) (SSOT - Single Source of Truth)
 
 **Enforcement Mechanisms:**
 1. **Deployment Check:** `deploy_all.sql` blocks execution after expiration date
-2. **Object Comments:** All Snowflake objects tagged with expiration date
+2. **Object Comments:** All Snowflake objects reference expiration SSOT
 3. **GitHub Actions:** Automated workflow (`.github/workflows/expire-demo.yml`) opens warning issues and attempts to archive/make private after expiration (requires `MASTER_PAT` for repo-admin actions)
 4. **README Badge:** Visual expiration indicator at top of documentation
 
