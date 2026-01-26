@@ -39,11 +39,11 @@
  *
  * PREREQUISITES:
  *   - ACCOUNTADMIN role OR role with:
- *     * CREATE DATABASE
+ *     * CREATE DATABASE, CREATE WAREHOUSE (if no active warehouse)
  *     * CREATE API INTEGRATION
  *     * CREATE GIT REPOSITORY
  *     * IMPORTED PRIVILEGES on SNOWFLAKE database
- *   - Active warehouse (XSMALL or larger)
+ *   - Warehouse auto-created if none active (SFE_DEMO_DEPLOY_WH)
  *
  * DEPLOYMENT TIME: ~2 minutes
  *
@@ -55,14 +55,37 @@
  ******************************************************************************/
 
 -- ===========================================================================
+-- WAREHOUSE CHECK (MANDATORY - Must run FIRST)
+-- ===========================================================================
+-- All subsequent operations require an active warehouse for compute.
+-- This block ensures a warehouse is available before proceeding.
+
+SET demo_expiration_date = '2026-02-25';  -- SSOT: mirrors line 6
+
+-- Capture current warehouse (may be NULL if user has no default)
+SET _current_wh = (SELECT CURRENT_WAREHOUSE());
+
+-- If no warehouse, create a temporary one for deployment
+EXECUTE IMMEDIATE $$
+BEGIN
+    IF (CURRENT_WAREHOUSE() IS NULL) THEN
+        CREATE WAREHOUSE IF NOT EXISTS SFE_DEMO_DEPLOY_WH
+            WAREHOUSE_SIZE = 'XSMALL'
+            AUTO_SUSPEND = 60
+            AUTO_RESUME = TRUE
+            INITIALLY_SUSPENDED = FALSE
+            COMMENT = 'Temporary warehouse for demo deployment - safe to drop after deployment';
+        USE WAREHOUSE SFE_DEMO_DEPLOY_WH;
+    END IF;
+END;
+$$;
+
+-- ===========================================================================
 -- EXPIRATION CHECK (MANDATORY)
 -- ===========================================================================
 -- SINGLE SOURCE OF TRUTH: Update ONLY the date on line 6 of this file header.
 -- All object COMMENTs below reference this date dynamically where possible.
 -- If expired, deployment is halted. Fork the repository and refresh the dates and syntax.
-
--- Session variable: parsed from header EXPIRES line (line 6)
-SET demo_expiration_date = '2026-02-25';
 
 -- Hard stop if expired
 DECLARE
@@ -172,6 +195,7 @@ ALTER STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR ADD LIVE V
 --
 -- Account-Level:
 --   - API Integration: SFE_CORTEX_TRAIL_GIT_API
+--   - Warehouse: SFE_DEMO_DEPLOY_WH (only if no warehouse was active)
 --
 -- Database-Level (SNOWFLAKE_EXAMPLE):
 --   - Database: SNOWFLAKE_EXAMPLE
@@ -190,6 +214,7 @@ ALTER STREAMLIT SNOWFLAKE_EXAMPLE.CORTEX_USAGE.CORTEX_COST_CALCULATOR ADD LIVE V
 --
 -- Cleanup:
 --   Run sql/99_cleanup/cleanup_all.sql to remove all objects
+--   If SFE_DEMO_DEPLOY_WH was created: DROP WAREHOUSE IF EXISTS SFE_DEMO_DEPLOY_WH;
 --
 -- Total deployment time: ~2 minutes
 
