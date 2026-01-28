@@ -1371,7 +1371,8 @@ def show_user_spend_attribution(data_source, lookback_days, credit_cost):
     st.divider()
 
     st.subheader("Drill-down: User Details")
-    selected_user = st.selectbox("Select a user", options=sorted(udf["USER_NAME"].unique()))
+    user_options = [u for u in udf["USER_NAME"].unique() if u is not None]
+    selected_user = st.selectbox("Select a user", options=sorted(user_options))
     user_df = udf[udf["USER_NAME"] == selected_user].copy()
     user_breakdown = (
         user_df.groupby(["SERVICE_TYPE", "FEATURE_NAME", "MODEL_NAME"], as_index=False)[["CREDITS_USED", "COST_USD"]]
