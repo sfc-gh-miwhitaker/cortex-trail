@@ -46,6 +46,7 @@ DATA_MATURITY_THRESHOLDS = {
 # Utility Functions
 # ============================================================================
 
+@st.cache_data(ttl=300, max_entries=10)  # Cache for 5 minutes
 def fetch_data_from_views(lookback_days=30):
     """Fetch data from historical snapshot table (with fallback to live view)"""
     # Try snapshot table first (faster)
@@ -812,7 +813,7 @@ def show_executive_summary(df, credit_cost, variance_pct, data_source):
     with col3:
         st.metric(
             "Active Users (Avg)",
-            f"{avg_daily_users:.0f}",
+            f"{avg_daily_users:.1f}",
             help="Average daily unique users"
         )
         st.metric(
@@ -935,7 +936,7 @@ def show_poc_to_production(df, credit_cost):
     with col1:
         st.metric("Current Monthly Run Rate", format_currency(current_monthly_cost))
     with col2:
-        st.metric("Current Users (Avg Daily)", f"{current_users:.0f}")
+        st.metric("Current Users (Avg Daily)", f"{current_users:.1f}")
     with col3:
         cost_per_user = current_monthly_cost / current_users if current_users > 0 else 0
         st.metric("Cost per User/Month", format_currency(cost_per_user))
@@ -1050,7 +1051,7 @@ def show_poc_to_production(df, credit_cost):
         proj = calculate_poc_to_prod_projection(current_monthly_cost, current_users, name)
         comparison_data.append({
             "Scenario": name.split(" (")[0],  # Shorten name
-            "Users": f"{proj['projected_users']:.0f}",
+            "Users": f"{proj['projected_users']:.1f}",
             "Monthly": format_currency(proj['projected_monthly_cost']),
             "Annual": format_currency(proj['projected_annual_cost']),
             "Cost/User": format_currency(proj['cost_per_user'])
@@ -1156,7 +1157,7 @@ def show_export_proposal(df, credit_cost, variance_pct):
 
     assumptions = [
         f"Based on {days_of_data} days of observed usage data",
-        f"Average of {avg_users:.0f} daily active users",
+        f"Average of {avg_users:.1f} daily active users",
         f"Credit cost: ${credit_cost:.2f}/credit",
         f"Variance range: +/- {variance*100:.0f}% (based on data maturity)",
         "Assumes current usage patterns continue"
@@ -1320,7 +1321,7 @@ def show_user_spend_attribution(data_source, lookback_days, credit_cost):
     with col2:
         st.metric("Total Cost (Attributed)", format_currency(total_cost))
     with col3:
-        st.metric("Users (Attributed)", format_number(unique_users))
+        st.metric("Users (Attributed)", f"{unique_users:.0f}")
 
     st.divider()
 
@@ -1590,7 +1591,7 @@ def show_historical_analysis(df, credit_cost):
     with col3:
         st.metric("Avg Daily Credits", format_number(avg_daily_credits))
     with col4:
-        st.metric("Avg Daily Users", format_number(avg_daily_users))
+        st.metric("Avg Daily Users", f"{avg_daily_users:.1f}")
 
     st.divider()
 
